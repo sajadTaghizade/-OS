@@ -27,6 +27,7 @@ static struct
   int locking;
 } cons;
 
+
 static void
 printint(int xx, int base, int sign)
 {
@@ -203,7 +204,41 @@ struct
 
 // #define C(x)  ((x)-'@')  // Control-x
 
+
+// extra variables MH
+
+static int start_point = -1;
+
+static int end_point = -1;
+
+// end of extra variables MH
+
+// extra functions MH
+static void
+consolehighlight(int start_pos, int end_pos, int on)
+{
+  int max_pos = 25 * 80;
+  ushort attr;
+
+  if (start_pos < 0 || end_pos >= max_pos || start_pos > end_pos) {
+    return;
+  }
+  
+  if (on) {
+    attr = 0x7000; // Highlight ON: Black text on light-grey background
+  } else {
+    attr = 0x0700; // Highlight OFF: Default light-grey text on black background
+  }
+
+  for (int i = start_pos; i <= end_pos; i++) {
+    crt[i] = (crt[i] & 0x00FF) | attr;
+  }
+}
+
+// end of extra functions MH
+
 // extra functions$
+
 static uint
 read_cursor_pos(void)
 {
@@ -346,6 +381,37 @@ void consoleintr(int (*getc)(void))
       }
       break;
     }
+
+
+    case C('S'): // Ctrl+S for select
+    {
+      int current_pos = read_cursor_pos();
+
+      if (start_point == -1) {
+        // This is the FIRST press of Ctrl+S, mark the start point
+        start_point = current_pos;
+
+      } else {
+        // This is the SECOND press, mark the end and highlight
+        end_point = current_pos;
+
+        // Ensure start_point is always less than end_point
+        if (start_point > end_point) {
+          int temp = start_point;
+          start_point = end_point;
+          end_point = temp;
+        }
+
+        // Call the function to highlight the region
+        consolehighlight(start_point, end_point, 1);
+
+        // Reset for the next selection
+        start_point = -1;
+        end_point = -1;
+      }
+      break;
+    }
+
 
       // end of new cases$
     default:
