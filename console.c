@@ -203,6 +203,38 @@ struct
 
 // #define C(x)  ((x)-'@')  // Control-x
 
+// extra functions$
+static uint
+read_cursor_pos(void)
+{
+  uint pos;
+  outb(CRTPORT, 14);
+  pos = inb(CRTPORT + 1) << 8;
+  outb(CRTPORT, 15);
+  pos |= inb(CRTPORT + 1);
+  return pos;
+}
+
+static void
+write_cursor_pos(uint pos)
+{
+  outb(CRTPORT, 14);
+  outb(CRTPORT + 1, pos >> 8);
+  outb(CRTPORT, 15);
+  outb(CRTPORT + 1, pos);
+}
+
+static void
+move_cursor(int steps)
+{
+  if (steps == 0)
+    return;
+  uint pos = read_cursor_pos();
+  pos += steps;
+  write_cursor_pos(pos);
+}
+// end of extra functions$
+
 void consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
@@ -216,6 +248,7 @@ void consoleintr(int (*getc)(void))
       // procdump() locks cons.lock indirectly; invoke later
       doprocdump = 1;
       break;
+
     case C('U'): // Kill line.
       while (input.e != input.w &&
              input.buf[(input.e - 1) % INPUT_BUF] != '\n')
@@ -234,21 +267,14 @@ void consoleintr(int (*getc)(void))
       }
       break;
 
-      // new cases
+      // new cases$
     case KEY_LF:
       if (input.cursor > input.w)
       {
         input.cursor--;
-        uint pos;
-        outb(CRTPORT, 14);
-        pos = inb(CRTPORT + 1) << 8;
-        outb(CRTPORT, 15);
-        pos |= inb(CRTPORT + 1);
+        uint pos = read_cursor_pos();
         pos--;
-        outb(CRTPORT, 14);
-        outb(CRTPORT + 1, pos >> 8);
-        outb(CRTPORT, 15);
-        outb(CRTPORT + 1, pos);
+        write_cursor_pos(pos);
       }
       break;
 
@@ -256,23 +282,72 @@ void consoleintr(int (*getc)(void))
       if (input.cursor < input.e)
       {
         input.cursor++;
-        uint pos;
-        outb(CRTPORT, 14);
-        pos = inb(CRTPORT + 1) << 8;
-        outb(CRTPORT, 15);
-        pos |= inb(CRTPORT + 1);
+        uint pos = read_cursor_pos();
         pos++;
-        outb(CRTPORT, 14);
-        outb(CRTPORT + 1, pos >> 8);
-        outb(CRTPORT, 15);
-        outb(CRTPORT + 1, pos);
+        write_cursor_pos(pos);
       }
       break;
 
+    case C('D'):
+      if (input.cursor < input.e)
+      {
+        int i = input.cursor;
+        // go to end of current word$
+        while (i < input.e && input.buf[i % INPUT_BUF] != ' ')
+        {
+          i++;
+        }
+        // go to end of space(s)$
+        while (i < input.e && input.buf[i % INPUT_BUF] == ' ')
+        {
+          i++;
+        }
 
-      
+        int steps = i - input.cursor;
+        // move logical and physical cursor based on step(s)$
+        if (steps > 0)
+        {
+          input.cursor = i;
 
-      // end of new cases
+          move_cursor(steps);
+        }
+      }
+      break;
+
+    case C('A'):
+    {
+      int current_pos = input.cursor;
+      int beginning_of_word = current_pos;
+      // go to beginning of word$
+      while (beginning_of_word > input.w && input.buf[(beginning_of_word - 1) % INPUT_BUF] != ' ')
+      {
+        beginning_of_word--;
+      }
+      // condition of jumping to the beginning of word$
+      if (current_pos == beginning_of_word)
+      {
+        while (beginning_of_word > input.w && input.buf[(beginning_of_word - 1) % INPUT_BUF] == ' ')
+        {
+          beginning_of_word--;
+        }
+        while (beginning_of_word > input.w && input.buf[(beginning_of_word - 1) % INPUT_BUF] != ' ')
+        {
+          beginning_of_word--;
+        }
+      }
+
+      int steps = current_pos - beginning_of_word;
+
+      if (steps > 0)
+      {
+        input.cursor = beginning_of_word;
+
+        move_cursor(-steps);
+      }
+      break;
+    }
+
+      // end of new cases$
     default:
       if (c != 0 && input.e - input.r < INPUT_BUF)
       {
