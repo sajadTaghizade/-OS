@@ -135,7 +135,7 @@ void panic(char *s)
 static ushort *crt = (ushort *)P2V(0xb8000); // CGA memory
 
 static void
-cgaputc(int c)
+gaputc(int c)
 {
   int pos;
 
@@ -172,6 +172,14 @@ cgaputc(int c)
   crt[pos] = ' ' | 0x0700;
 }
 
+// extra variables MH
+
+static int start_point = -1;
+
+static int end_point = -1;
+
+// end of extra variables MH
+
 void consputc(int c)
 {
   if (panicked)
@@ -183,13 +191,13 @@ void consputc(int c)
 
   if (c == BACKSPACE)
   {
-    uartputc('\b');
-    uartputc(' ');
-    uartputc('\b');
+      uartputc('\b');
+      uartputc(' ');
+      uartputc('\b');
   }
   else
     uartputc(c);
-  cgaputc(c);
+  gaputc(c);
 }
 
 #define INPUT_BUF 128
@@ -205,13 +213,7 @@ struct
 // #define C(x)  ((x)-'@')  // Control-x
 
 
-// extra variables MH
 
-static int start_point = -1;
-
-static int end_point = -1;
-
-// end of extra variables MH
 
 // extra functions MH
 static void
@@ -294,11 +296,32 @@ void consoleintr(int (*getc)(void))
       break;
     case C('H'):
     case '\x7f': // Backspace
-      if (input.e != input.w)
-      {
-        input.e--;
-        input.cursor--;
-        consputc(BACKSPACE);
+      if(end_point == -1) {
+        if (input.e != input.w)
+        {
+          input.e--;
+          input.cursor--;
+          consputc(BACKSPACE);
+        }
+      } else {
+        int current_pos = read_cursor_pos();
+        if(current_pos == start_point) {
+          int step = end_point - start_point + 1;
+          input.cursor += step;
+          current_pos += step;
+          write_cursor_pos(current_pos);
+        }
+        for (int i = 0; i < end_point - start_point + 1; i++)
+        {
+          if (input.e != input.w)
+          {
+            input.e--;
+            input.cursor--;
+            consputc(BACKSPACE);
+          } 
+        }
+        start_point = -1;
+        end_point = -1;
       }
       break;
 
@@ -393,25 +416,37 @@ void consoleintr(int (*getc)(void))
 
       } else {
         // This is the SECOND press, mark the end and highlight
-        end_point = current_pos;
+        end_point = current_pos - 1;
 
         // Ensure start_point is always less than end_point
         if (start_point > end_point) {
           int temp = start_point;
           start_point = end_point;
           end_point = temp;
+          start_point++;
+          end_point--;
         }
 
         // Call the function to highlight the region
         consolehighlight(start_point, end_point, 1);
-
-        // Reset for the next selection
-        start_point = -1;
-        end_point = -1;
       }
       break;
     }
 
+
+    // case C('C'): // Copy selected text
+    //   if (start_point != -1 && end_point != -1) {
+    //     int i, j;
+    //     // Loop from the start to the end of the selection
+    //     for (i = start_point, j = 0; i <= end_point && j < COPY_BUF_SIZE - 1; i++, j++) {
+    //       // Read the character byte (low byte) from video memory
+    //       // and store it in our copy buffer.
+    //       copy_buffer[j] = crt[i] & 0xFF;
+    //     }
+    //     // Add a null terminator to make it a valid C string.
+    //     copy_buffer[j] = '\0';
+    //   }
+    //   break;
 
       // end of new cases$
     default:
