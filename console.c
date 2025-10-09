@@ -299,7 +299,9 @@ void consoleintr(int (*getc)(void))
       if(end_point == -1) {
         if (input.e != input.w)
         {
-          input.e--;
+          if(input.e == input.cursor) {
+            input.e--;
+          }
           input.cursor--;
           consputc(BACKSPACE);
         }
@@ -315,7 +317,9 @@ void consoleintr(int (*getc)(void))
         {
           if (input.e != input.w)
           {
-            input.e--;
+            if(input.e == input.cursor) {
+              input.e--;
+            }
             input.cursor--;
             consputc(BACKSPACE);
           } 
