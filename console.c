@@ -21,6 +21,10 @@ static void consputc(int);
 
 static int panicked = 0;
 
+static int ins_tick = 0 ;
+static int stamp[INPUT_BUF] ;
+
+
 static struct
 {
   struct spinlock lock;
@@ -365,6 +369,7 @@ void consoleintr(int (*getc)(void))
         input.e--;
         consputc(BACKSPACE);
       }
+      int ins_tick = 0 
       start_point = -1;
       end_point = -1;
       break;
@@ -409,6 +414,7 @@ void consoleintr(int (*getc)(void))
       if(input.e == input.w){
         input.w == input.e;
         wakeup(&input.r);
+        int ins_tick = 0 
         deselect();
         break;
       }
@@ -559,6 +565,7 @@ void consoleintr(int (*getc)(void))
         {
           input.w = input.e;
           wakeup(&input.r);
+          int ins_tick = 0 
         }
       }
       break;
