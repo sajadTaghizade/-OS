@@ -404,31 +404,34 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('D'):
-      if (input.cursor < input.e)
-      {
-        int i = input.cursor;
-        // go to end of current word$
-        while (i < input.e && input.buf[i % INPUT_BUF] != ' ')
-        {
-          i++;
-        }
-        // go to end of space(s)$
-        while (i < input.e && input.buf[i % INPUT_BUF] == ' ')
-        {
-          i++;
-        }
+    { 
 
-        int steps = i - input.cursor;
-        // move logical and physical cursor based on step(s)$
-        if (steps > 0)
-        {
-          input.cursor = i;
-
-          move_cursor(steps);
-        }
+      if(input.e == input.w){
+        input.w == input.e;
+        wakeup(&input.r);
+        deselect();
+        break;
       }
-      deselect(); // remove highlight from selected text MH
+
+      int i = input.cursor ;
+
+      while( i < input.e && !is_space(input.buf[i % INPUT_BUF])) i++ ;
+
+      while( i < input.e && is_space(input.buf[i % INPUT_BUF])) i++ ;
+
+      if (i > input.cursor){
+        for( int k = input.cursor){
+          consputc(input.buf[ k % INPUT_BUF]);
+        }
+        input.cursor = i ; 
+
+      }
+
+      deselect(); 
       break;
+
+    }
+
 
     case C('A'):
     {
