@@ -27,7 +27,6 @@ static struct
   int locking;
 } cons;
 
-
 static void
 printint(int xx, int base, int sign)
 {
@@ -195,9 +194,9 @@ void consputc(int c)
 
   if (c == BACKSPACE)
   {
-      uartputc('\b');
-      uartputc(' ');
-      uartputc('\b');
+    uartputc('\b');
+    uartputc(' ');
+    uartputc('\b');
   }
   else
     uartputc(c);
@@ -214,8 +213,6 @@ struct
 } input;
 
 // #define C(x)  ((x)-'@')  // Control-x
-
-
 
 // extra functions$
 
@@ -258,28 +255,35 @@ consolehighlight(int start_pos, int end_pos, int on)
   int max_pos = 25 * 80;
   ushort attr;
 
-  if (start_pos < 0 || end_pos >= max_pos || start_pos > end_pos) {
+  if (start_pos < 0 || end_pos >= max_pos || start_pos > end_pos)
+  {
     return;
   }
-  
-  if (on) {
+
+  if (on)
+  {
     attr = 0x7000; // Highlight ON: Black text on light-grey background
-  } else {
+  }
+  else
+  {
     attr = 0x0700; // Highlight OFF: Default light-grey text on black background
   }
 
-  for (int i = start_pos; i <= end_pos; i++) {
+  for (int i = start_pos; i <= end_pos; i++)
+  {
     crt[i] = (crt[i] & 0x00FF) | attr;
   }
 }
 
 static void
-deselect() 
+deselect()
 {
-  if(end_point != -1) {
+  if (end_point != -1)
+  {
     ushort attr = 0x0700;
-    
-    for (int i = start_point; i <= end_point; i++) {
+
+    for (int i = start_point; i <= end_point; i++)
+    {
       crt[i] = (crt[i] & 0x00FF) | attr;
     }
     start_point = -1;
@@ -287,25 +291,40 @@ deselect()
   }
 }
 
-
 static void
 backspace()
 {
-  if (input.e != input.w)
+  if (input.cursor == input.w)
+    return;
+
+  uint original_pos = read_cursor_pos() - 1;
+
+  input.cursor--;
+
+  memmove(&input.buf[input.cursor % INPUT_BUF],
+          &input.buf[(input.cursor + 1) % INPUT_BUF],
+          input.e - (input.cursor + 1));
+
+  input.e--;
+
+  write_cursor_pos(original_pos);
+
+  for (int i = input.cursor; i < input.e; i++)
   {
-    if(input.e == input.cursor) {
-      input.e--;
-    }
-    input.cursor--;
-    consputc(BACKSPACE);
-  } 
+    consputc(input.buf[i % INPUT_BUF]);
+  }
+
+  consputc(' ');
+
+  write_cursor_pos(original_pos);
 }
 
 static void
 delete_selected_text()
 {
   int current_pos = read_cursor_pos();
-  if(current_pos == start_point) {
+  if (current_pos == start_point)
+  {
     int step = end_point - start_point + 1;
     input.cursor += step;
     current_pos += step;
@@ -320,7 +339,6 @@ delete_selected_text()
 }
 
 // end of extra functions MH
-
 
 void consoleintr(int (*getc)(void))
 {
@@ -348,9 +366,12 @@ void consoleintr(int (*getc)(void))
       break;
     case C('H'):
     case '\x7f': // Backspace
-      if(end_point == -1) {
+      if (end_point == -1)
+      {
         backspace();
-      } else {
+      }
+      else
+      {
         delete_selected_text();
       }
       break;
@@ -446,16 +467,19 @@ void consoleintr(int (*getc)(void))
     {
       int current_pos = read_cursor_pos();
 
-      if (start_point == -1) {
+      if (start_point == -1)
+      {
         // This is the FIRST press of Ctrl+S, mark the start point
         start_point = current_pos;
-
-      } else {
+      }
+      else
+      {
         // This is the SECOND press, mark the end and highlight
         end_point = current_pos - 1;
 
         // Ensure start_point is always less than end_point
-        if (start_point > end_point) {
+        if (start_point > end_point)
+        {
           int temp = start_point;
           start_point = end_point;
           end_point = temp;
@@ -469,12 +493,13 @@ void consoleintr(int (*getc)(void))
       break;
     }
 
-
     case C('C'): // Copy selected text
-      if (start_point != -1 && end_point != -1) {
+      if (start_point != -1 && end_point != -1)
+      {
         int i, j;
         // Loop from the start to the end of the selection
-        for (i = start_point, j = 0; i <= end_point && j < INPUT_BUF - 1; i++, j++) {
+        for (i = start_point, j = 0; i <= end_point && j < INPUT_BUF - 1; i++, j++)
+        {
           // Read the character byte (low byte) from video memory
           // and store it in our copy buffer.
           copy_buffer[j] = crt[i] & 0xFF;
@@ -484,37 +509,39 @@ void consoleintr(int (*getc)(void))
       }
       break;
 
-
     case C('V'): // Paste text from copy_buffer
-      if (copy_buffer[0] != '\0') { // Check if there's anything to paste
+      if (copy_buffer[0] != '\0')
+      { // Check if there's anything to paste
         delete_selected_text();
         int i = 0;
-        while (copy_buffer[i] != '\0' && input.e < input.w + INPUT_BUF) {
+        while (copy_buffer[i] != '\0' && input.e < input.w + INPUT_BUF)
+        {
           char char_to_paste = copy_buffer[i];
-          
+
           // 1. Add the character to the input data buffer
           input.buf[input.e % INPUT_BUF] = char_to_paste;
           input.e++;
-          
+
           // 2. Update the internal cursor position
           input.cursor++;
-          
+
           // 3. Display the character on the screen
           consputc(char_to_paste);
-          
+
           i++;
         }
       }
       break;
-      
-    // end of new cases MH
+
+      // end of new cases MH
 
     default:
       if (c != 0 && input.e - input.r < INPUT_BUF)
       {
         c = (c == '\r') ? '\n' : c;
 
-        if(end_point != -1) {
+        if (end_point != -1)
+        {
           delete_selected_text(); // delete selected text if any MH
         }
 
