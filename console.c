@@ -59,14 +59,20 @@ printint(int xx, int base, int sign)
 // PAGEBREAK: 50
 
 static void goto_indx(int target){
-  if( target < input.cursor){
-    for( t=0 ; t < input.cursor - target ; t++){
+
+  if( target < input.w ) 
+    target = input.w ;
+  else if( target > input.e )
+    target = input.w ;
+
+  else if( target < input.cursor){
+    for( int t=0 ; t < input.cursor - target ; t++){
       consputc(BACKSPACE);
     }
     input.cursor = target ;
   }
-  else if(target < input.cursor){
-    for( k = input.cursor ; k<target ; k++){
+  else if(target > input.cursor){
+    for(int k = input.cursor ; k<target ; k++){
       consputc(input.buf[k % INPUT_BUF]);
     }
     input.cursor = target ;
@@ -627,34 +633,48 @@ void consoleintr(int (*getc)(void))
 
       // end of new cases MH
 
-    default:
-      if (c != 0 && input.e - input.r < INPUT_BUF)
-      {
-        c = (c == '\r') ? '\n' : c;
+    default: {
+      if (c == 0)
+        break;
 
-        if (end_point != -1)
-        {
-          delete_selected_text(); // delete selected text if any MH
-        }
+  
+      if (c == '\r') c = '\n';
 
-        input.buf[input.e++ % INPUT_BUF] = c;
 
-        for(int j = input.e-1 ; j > input.cursor ; j--){
-          stamp[j % INPUT_BUF] = stamp[(j-1) % INPUT_BUF];
-        }
-        stamp[input.cursor % INPUT_BUF] = ++ ins_tick ;
+      if (end_point != -1) {
+        delete_selected_text();   
+      } 
 
-        input.cursor++;
-        consputc(c);
+ 
+      if ((input.e - input.w) >= INPUT_BUF)
+        break;
 
-        if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF)
-        {
-          input.w = input.e;
-          wakeup(&input.r);
-          int ins_tick = 0 
-        }
+      for (int j = (int)input.e; j > (int)input.cursor; j--) {
+        input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
+        stamp[j % INPUT_BUF]     = stamp[(j - 1) % INPUT_BUF];
       }
-      break;
+
+      input.buf[input.cursor % INPUT_BUF] = c;
+      stamp[input.cursor % INPUT_BUF]     = ++ins_tick;
+      input.e++;
+
+      for (unsigned j = input.cursor; j < input.e; j++)
+        consputc(input.buf[j % INPUT_BUF]);
+
+      for (unsigned j = input.e; j > input.cursor + 1; j--)
+        consputc(BACKSPACE);
+
+      input.cursor++;
+
+      if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF) {
+        input.w = input.e;
+        wakeup(&input.r);
+        ins_tick = 0; 
+    } 
+
+  break;
+  }
+
     }
   }
   release(&cons.lock);
