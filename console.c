@@ -58,6 +58,21 @@ printint(int xx, int base, int sign)
 }
 // PAGEBREAK: 50
 
+static void goto_indx(int target){
+  if( target < input.cursor){
+    for( t=0 ; t < input.cursor - target ; t++){
+      consputc(BACKSPACE);
+    }
+    input.cursor = target ;
+  }
+  else if(target < input.cursor){
+    for( k = input.cursor ; k<target ; k++){
+      consputc(input.buf[k % INPUT_BUF]);
+    }
+    input.cursor = target ;
+  }
+}
+
 // Print to the console. only understands %d, %x, %p, %s.
 void cprintf(char *fmt, ...)
 {
