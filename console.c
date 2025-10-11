@@ -571,6 +571,60 @@ void consoleintr(int (*getc)(void))
       }
       break;
 
+    case C('Z'):
+
+      if(input.e == input.w)
+        break;
+
+      int prev_cursor = input.cursor ; 
+      int best = 0 ;
+      int best_indx = -1 ;
+
+      for(int j = input.w ; j < input.e ; j++){
+        int st = stamp[j % INPUT_BUF];
+        if(st > best){
+          best = st ;
+          best_indx = j ;
+        }
+      }
+
+      if(best_indx < 0)
+        break;
+
+      goto_indx( best_indx + 1);
+
+      consputc(BACKSPACE);
+
+      for( int j = input.cursor -1 ; j < input.e -1; j++){
+        input.buf[j % INPUT_BUF] = input.buf[(j+1)% INPUT_BUF];
+        stamp[j % INPUT_BUF] = stamp[(j+1)% INPUT_BUF];
+      }
+
+      input.e--;
+      input.cursor--;
+      stamp[input.e % INPUT_BUF] = 0;
+
+      for(int j = input.cursor ; j < input.e ; j++){
+        consputc( input.buf[j%INPUT_BUF] );
+      }
+      consputc(' ');
+
+      for(int j = input.e +1; j > input.cursor+1 ; j--){
+        consputc(BACKSPACE);
+      }
+
+      int restore = prev_cursor ;
+
+      if(best_indx < prev_cursor){
+        if(restore > input.w)
+          restore -= 1 ;
+      }
+
+      goto_indx(restore);
+
+      break;
+
+
       // end of new cases MH
 
     default:
