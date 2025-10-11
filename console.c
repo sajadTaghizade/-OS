@@ -19,7 +19,7 @@
 #define INPUT_BUF 128
 
 static void consputc(int);
-static int stamp[INPUT_BUF] ;
+static int stamp[INPUT_BUF];
 static int panicked = 0;
 static int ins_tick = 0;
 static struct
@@ -172,7 +172,6 @@ gaputc(int c)
   crt[pos] = ' ' | 0x0700;
 }
 
-
 // extra variables MH
 
 static int start_point = -1;
@@ -291,57 +290,80 @@ deselect()
   }
 }
 
-
 static void
 delete_char_at(int index)
 {
-  if(index < input.w || index >= input.e)
+  if (index < input.w || index >= input.e)
     return;
 
   uint original_pos = read_cursor_pos();
   int new_cursor_offset = (input.cursor > index) ? -1 : 0;
 
-  memmove(&input.buf[index % INPUT_BUF], 
-          &input.buf[(index + 1) % INPUT_BUF], 
-          input.e - (index + 1));
-  memmove(&stamp[index % INPUT_BUF], 
-          &stamp[(index + 1) % INPUT_BUF], 
-          input.e - (index + 1));
+  // memmove(&input.buf[index % INPUT_BUF],
+  //         &input.buf[(index + 1) % INPUT_BUF],
+  //         input.e - (index + 1));
+  // memmove(&stamp[index % INPUT_BUF],
+  //         &stamp[(index + 1) % INPUT_BUF],
+  //         input.e - (index + 1));
+  for (unsigned j = index; j < input.e - 1; j++)
+  {
+    input.buf[j % INPUT_BUF] = input.buf[(j + 1) % INPUT_BUF];
+  }
+
+  for (unsigned j = index; j < input.e - 1; j++)
+  {
+    stamp[j % INPUT_BUF] = stamp[(j + 1) % INPUT_BUF];
+  }
 
   input.e--;
-  
+  stamp[input.e % INPUT_BUF] = 0;
+
   if (input.cursor > index)
     input.cursor--;
-  
+
   write_cursor_pos(read_cursor_pos() - (input.cursor - index));
 
-  for(int i = index; i < input.e; i++){
+  for (int i = index; i < input.e; i++)
+  {
     consputc(input.buf[i % INPUT_BUF]);
   }
-  
+
   consputc(' ');
 
   write_cursor_pos(original_pos + new_cursor_offset);
 }
 
+// static void
+// backspace2()
+// {
+//   if (input.cursor == input.w)
+//     return;
 
-/*static void  dbug (){
+//   uint original_pos = read_cursor_pos() - 1;
 
-  
-        cprintf("debugg");
+//   input.cursor--;
 
-        for ( unsigned i = input.w ; i< input.e ; i++){
-          cprintf("%u" , i% INPUT_BUF);
+//   memmove(&input.buf[input.cursor % INPUT_BUF],
+//           &input.buf[(input.cursor + 1) % INPUT_BUF],
+//           input.e - (input.cursor + 1));
 
-        }
-        cprintf("\n");
-        for ( unsigned i = input.w ; i< input.e ; i++){
-          cprintf("%u" , stamp[i% INPUT_BUF]);
+//   memmove(&stamp[input.cursor % INPUT_BUF],
+//           &stamp[(input.cursor + 1) % INPUT_BUF],
+//           (input.e - (input.cursor + 1)));
+//   input.e--;
+//   stamp[input.e % INPUT_BUF] = 0;
 
-        }
-        cprintf("\n");
+//   write_cursor_pos(original_pos);
 
-}*/
+//   for (int i = input.cursor; i < input.e; i++)
+//   {
+//     consputc(input.buf[i % INPUT_BUF]);
+//   }
+
+//   consputc(' ');
+
+//   write_cursor_pos(original_pos);
+// }
 
 static void
 backspace()
@@ -352,16 +374,17 @@ backspace()
   uint original_pos = read_cursor_pos() - 1;
 
   input.cursor--;
+  for (unsigned j = input.cursor; j < input.e - 1; j++)
+  {
+    input.buf[j % INPUT_BUF] = input.buf[(j + 1) % INPUT_BUF];
+  }
 
-  memmove(&input.buf[input.cursor % INPUT_BUF],
-          &input.buf[(input.cursor + 1) % INPUT_BUF],
-          input.e - (input.cursor + 1));
-
-  memmove(&stamp[input.cursor % INPUT_BUF],
-          &stamp[(input.cursor + 1)% INPUT_BUF],
-          (input.e - (input.cursor + 1)) * sizeof(stamp[0]) );
+  for (unsigned j = input.cursor; j < input.e - 1; j++)
+  {
+    stamp[j % INPUT_BUF] = stamp[(j + 1) % INPUT_BUF];
+  }
   input.e--;
-  stamp[input.e % INPUT_BUF] = 0 ;
+  stamp[input.e % INPUT_BUF] = 0;
 
   write_cursor_pos(original_pos);
 
@@ -374,8 +397,6 @@ backspace()
 
   write_cursor_pos(original_pos);
 }
-
-
 
 static void
 delete_selected_text()
@@ -400,6 +421,7 @@ delete_selected_text()
 
 void consoleintr(int (*getc)(void))
 {
+  int print_debug = 0;
   int c, doprocdump = 0;
 
   acquire(&cons.lock);
@@ -591,78 +613,115 @@ void consoleintr(int (*getc)(void))
       }
       break;
 
-
-      case C('Z'):
+    case C('Z'):
     {
       deselect();
-      if(input.e == input.w)
+      if (input.e == input.w)
         break;
 
       int latest_stamp = -1;
       int index_to_remove = -1;
 
-      for(int i = input.w; i < input.e; i++){
-        if(stamp[i % INPUT_BUF] > latest_stamp){
+      for (int i = input.w; i < input.e; i++)
+      {
+        if (stamp[i % INPUT_BUF] > latest_stamp)
+        {
           latest_stamp = stamp[i % INPUT_BUF];
           index_to_remove = i;
         }
       }
 
-      if(index_to_remove != -1){
+      if (index_to_remove != -1)
+      {
         delete_char_at(index_to_remove);
       }
       break;
     }
 
-
-
       // end of new cases MH
 
-   default:
+    default:
     {
-      if (c != 0 && (input.e - input.w) < INPUT_BUF) {
-        if (end_point != -1) {
+      if (c != 0 && (input.e - input.w) < INPUT_BUF)
+      {
+        if (end_point != -1)
+        {
           delete_selected_text();
+        }
+
+        if (c == '\n')
+        {
+          print_debug = 1;
         }
 
         uint original_pos = read_cursor_pos();
 
-        memmove(&input.buf[(input.cursor + 1) % INPUT_BUF], 
-                &input.buf[input.cursor % INPUT_BUF], 
-                input.e - input.cursor);
-
-        memmove(&stamp[(input.cursor + 1) % INPUT_BUF], 
-                &stamp[input.cursor % INPUT_BUF], 
-                input.e - input.cursor);
-
+        // memmove(&input.buf[(input.cursor + 1) % INPUT_BUF],
+        //         &input.buf[input.cursor % INPUT_BUF],
+        //         input.e - input.cursor);
+        // memmove(&stamp[(input.cursor + 1) % INPUT_BUF],
+        //         &stamp[input.cursor % INPUT_BUF],
+        //         input.e - input.cursor);
+        for (unsigned j = input.e; j > input.cursor; j--)
+        {
+          input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
+          stamp[j % INPUT_BUF] = stamp[(j - 1) % INPUT_BUF];
+        }
 
         input.buf[input.cursor % INPUT_BUF] = c;
         stamp[input.cursor % INPUT_BUF] = ++ins_tick;
 
-
         input.e++;
         input.cursor++;
 
-
-        for(int i = input.cursor - 1; i < input.e; i++){
+        for (int i = input.cursor - 1; i < input.e; i++)
+        {
           consputc(input.buf[i % INPUT_BUF]);
         }
-        
+
         write_cursor_pos(original_pos + 1);
 
-        if (c == '\n' || c == C('D')) {
+        if (c == C('D'))
+        {
           input.w = input.e;
           wakeup(&input.r);
           ins_tick = 0;
         }
+        // if (c == '\n') {
+        //   input.w = input.e;
+        //   wakeup(&input.r);
+        //   ins_tick = 0;
+        // }
       }
       break;
     }
     }
   }
   release(&cons.lock);
+
+  // --- START DEBUG CODE ---
+  // فقط زمانی چاپ کن که یک کلمه تمام شده باشد
+  if (print_debug)
+  {
+    cprintf("\n--- DEBUG (Word End) ---\n");
+    cprintf("Buffer: [");
+    for (int i = input.w; i < input.e; i++)
+    {
+      cprintf("%c", input.buf[i % INPUT_BUF]);
+    }
+    cprintf("]\nStamps: [");
+    for (int i = input.w; i < input.e; i++)
+    {
+      cprintf("%d ", stamp[i % INPUT_BUF]);
+    }
+    cprintf("]\n");
+    cprintf("------------------------\n");
+  }
+  // --- END DEBUG CODE ---
+
   if (doprocdump)
   {
+    procdump();
   }
 }
 
