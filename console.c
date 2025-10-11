@@ -16,15 +16,12 @@
 #include "x86.h"
 
 #include "kbd.h"
+#define INPUT_BUF 128
 
 static void consputc(int);
-
-static int panicked = 0;
-
-static int ins_tick = 0 ;
 static int stamp[INPUT_BUF] ;
-
-
+static int panicked = 0;
+static int ins_tick = 0;
 static struct
 {
   struct spinlock lock;
@@ -57,27 +54,6 @@ printint(int xx, int base, int sign)
     consputc(buf[i]);
 }
 // PAGEBREAK: 50
-
-static void goto_indx(int target){
-
-  if( target < input.w ) 
-    target = input.w ;
-  else if( target > input.e )
-    target = input.e ;
-
-  else if( target < input.cursor){
-    for( int t=0 ; t < input.cursor - target ; t++){
-      consputc(BACKSPACE);
-    }
-    input.cursor = target ;
-  }
-  else if(target > input.cursor){
-    for(int k = input.cursor ; k<target ; k++){
-      consputc(input.buf[k % INPUT_BUF]);
-    }
-    input.cursor = target ;
-  }
-}
 
 // Print to the console. only understands %d, %x, %p, %s.
 void cprintf(char *fmt, ...)
@@ -196,7 +172,6 @@ gaputc(int c)
   crt[pos] = ' ' | 0x0700;
 }
 
-#define INPUT_BUF 128
 
 // extra variables MH
 
@@ -316,9 +291,39 @@ deselect()
   }
 }
 
-static int is_space(char c){
-  return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f';
+
+static void
+delete_char_at(int index)
+{
+  if(index < input.w || index >= input.e)
+    return;
+
+  uint original_pos = read_cursor_pos();
+  int new_cursor_offset = (input.cursor > index) ? -1 : 0;
+
+  memmove(&input.buf[index % INPUT_BUF], 
+          &input.buf[(index + 1) % INPUT_BUF], 
+          input.e - (index + 1));
+  memmove(&stamp[index % INPUT_BUF], 
+          &stamp[(index + 1) % INPUT_BUF], 
+          input.e - (index + 1));
+
+  input.e--;
+  
+  if (input.cursor > index)
+    input.cursor--;
+  
+  write_cursor_pos(read_cursor_pos() - (input.cursor - index));
+
+  for(int i = index; i < input.e; i++){
+    consputc(input.buf[i % INPUT_BUF]);
+  }
+  
+  consputc(' ');
+
+  write_cursor_pos(original_pos + new_cursor_offset);
 }
+
 
 static void
 backspace()
@@ -351,6 +356,8 @@ backspace()
 
   write_cursor_pos(original_pos);
 }
+
+
 
 static void
 delete_selected_text()
@@ -394,7 +401,6 @@ void consoleintr(int (*getc)(void))
         input.e--;
         consputc(BACKSPACE);
       }
-      ins_tick = 0 ;
       start_point = -1;
       end_point = -1;
       break;
@@ -434,35 +440,31 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('D'):
-    { 
-
-      if(input.e == input.w){
-        input.w = input.e;
-        wakeup(&input.r);
-        ins_tick = 0 ;
-        deselect();
-        break;
-      }
-
-      int i = input.cursor ;
-
-      while( i < input.e && !is_space(input.buf[i % INPUT_BUF])) i++ ;
-
-      while( i < input.e && is_space(input.buf[i % INPUT_BUF])) i++ ;
-
-      if (i > input.cursor){
-        for( int k = input.cursor ; k < i ; k++){
-          consputc(input.buf[ k % INPUT_BUF]);
+      if (input.cursor < input.e)
+      {
+        int i = input.cursor;
+        // go to end of current word$
+        while (i < input.e && input.buf[i % INPUT_BUF] != ' ')
+        {
+          i++;
         }
-        input.cursor = i ; 
+        // go to end of space(s)$
+        while (i < input.e && input.buf[i % INPUT_BUF] == ' ')
+        {
+          i++;
+        }
 
+        int steps = i - input.cursor;
+        // move logical and physical cursor based on step(s)$
+        if (steps > 0)
+        {
+          input.cursor = i;
+
+          move_cursor(steps);
+        }
       }
-
-      deselect(); 
+      deselect(); // remove highlight from selected text MH
       break;
-
-    }
-
 
     case C('A'):
     {
@@ -548,8 +550,6 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('V'): // Paste text from copy_buffer
-      deselect();
-
       if (copy_buffer[0] != '\0')
       { // Check if there's anything to paste
         delete_selected_text();
@@ -557,12 +557,6 @@ void consoleintr(int (*getc)(void))
         while (copy_buffer[i] != '\0' && input.e < input.w + INPUT_BUF)
         {
           char char_to_paste = copy_buffer[i];
-
-          for(int j = input.e-1 ; j > input.cursor ; j--){
-            input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
-            stamp[j % INPUT_BUF] = stamp[(j-1) % INPUT_BUF];
-          }
-          stamp[input.cursor % INPUT_BUF] = ++ ins_tick ;
 
           // 1. Add the character to the input data buffer
           input.buf[input.e % INPUT_BUF] = char_to_paste;
@@ -579,112 +573,75 @@ void consoleintr(int (*getc)(void))
       }
       break;
 
-    case C('Z'):
 
+      case C('Z'):
+    {
       deselect();
-
       if(input.e == input.w)
         break;
 
-      int prev_cursor = input.cursor ; 
-      int best = 0 ;
-      int best_indx = -1 ;
+      int latest_stamp = -1;
+      int index_to_remove = -1;
 
-      for(int j = input.w ; j < input.e ; j++){
-        int st = stamp[j % INPUT_BUF];
-        if(st > best){
-          best = st ;
-          best_indx = j ;
+      for(int i = input.w; i < input.e; i++){
+        if(stamp[i % INPUT_BUF] > latest_stamp){
+          latest_stamp = stamp[i % INPUT_BUF];
+          index_to_remove = i;
         }
       }
 
-      if(best_indx < 0)
-        break;
-
-      goto_indx( best_indx + 1);
-
-      consputc(BACKSPACE);
-
-      for( int j = input.cursor -1 ; j < input.e -1; j++){
-        input.buf[j % INPUT_BUF] = input.buf[(j+1)% INPUT_BUF];
-        stamp[j % INPUT_BUF] = stamp[(j+1)% INPUT_BUF];
+      if(index_to_remove != -1){
+        delete_char_at(index_to_remove);
       }
-
-      input.e--;
-      input.cursor--;
-      stamp[input.e % INPUT_BUF] = 0;
-
-      for(int j = input.cursor ; j < input.e ; j++){
-        consputc( input.buf[j%INPUT_BUF] );
-      }
-      consputc(' ');
-
-      for(int j = input.e +1; j > input.cursor+1 ; j--){
-        consputc(BACKSPACE);
-      }
-
-      int restore = prev_cursor ;
-
-      if(best_indx < prev_cursor){
-        if(restore > input.w)
-          restore -= 1 ;
-      }
-
-      goto_indx(restore);
-
       break;
+    }
+
 
 
       // end of new cases MH
 
-    default: {
-      if (c == 0)
-        break;
+   default:
+    {
+      if (c != 0 && (input.e - input.w) < INPUT_BUF) {
+        if (end_point != -1) {
+          delete_selected_text();
+        }
 
-  
-      if (c == '\r') c = '\n';
+        uint original_pos = read_cursor_pos();
+
+        memmove(&input.buf[(input.cursor + 1) % INPUT_BUF], 
+                &input.buf[input.cursor % INPUT_BUF], 
+                input.e - input.cursor);
+        memmove(&stamp[(input.cursor + 1) % INPUT_BUF], 
+                &stamp[input.cursor % INPUT_BUF], 
+                input.e - input.cursor);
+
+        input.buf[input.cursor % INPUT_BUF] = c;
+        stamp[input.cursor % INPUT_BUF] = ++ins_tick;
+        
+        input.e++;
+        input.cursor++;
 
 
-      if (end_point != -1) {
-        delete_selected_text();   
-      } 
+        for(int i = input.cursor - 1; i < input.e; i++){
+          consputc(input.buf[i % INPUT_BUF]);
+        }
+        
+        write_cursor_pos(original_pos + 1);
 
- 
-      if ((input.e - input.w) >= INPUT_BUF)
-        break;
-
-      for (int j = (int)input.e; j > (int)input.cursor; j--) {
-        input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
-        stamp[j % INPUT_BUF]     = stamp[(j - 1) % INPUT_BUF];
+        if (c == '\n' || c == C('D')) {
+          input.w = input.e;
+          wakeup(&input.r);
+          ins_tick = 0;
+        }
       }
-
-      input.buf[input.cursor % INPUT_BUF] = c;
-      stamp[input.cursor % INPUT_BUF]     = ++ins_tick;
-      input.e++;
-
-      for (unsigned j = input.cursor; j < input.e; j++)
-        consputc(input.buf[j % INPUT_BUF]);
-
-      for (unsigned j = input.e; j > input.cursor + 1; j--)
-        consputc(BACKSPACE);
-
-      input.cursor++;
-
-      if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF) {
-        input.w = input.e;
-        wakeup(&input.r);
-        ins_tick = 0; 
-    } 
-
-  break;
-  }
-
+      break;
+    }
     }
   }
   release(&cons.lock);
   if (doprocdump)
   {
-    procdump(); // now call procdump() wo. cons.lock held
   }
 }
 
