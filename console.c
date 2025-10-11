@@ -63,7 +63,7 @@ static void goto_indx(int target){
   if( target < input.w ) 
     target = input.w ;
   else if( target > input.e )
-    target = input.w ;
+    target = input.e ;
 
   else if( target < input.cursor){
     for( int t=0 ; t < input.cursor - target ; t++){
@@ -335,8 +335,8 @@ backspace()
           input.e - (input.cursor + 1));
 
   memmove(&stamp[input.cursor % INPUT_BUF],
-          &stamp[input.cursor + 1]% INPUT_BUF],
-          (input.e - (input.cursor + 1)) * sizeof(stamp(0)) );
+          &stamp[(input.cursor + 1)% INPUT_BUF],
+          (input.e - (input.cursor + 1)) * sizeof(stamp[0]) );
   input.e--;
   stamp[input.e % INPUT_BUF] = 0 ;
 
@@ -439,7 +439,7 @@ void consoleintr(int (*getc)(void))
       if(input.e == input.w){
         input.w = input.e;
         wakeup(&input.r);
-        ins_tick = 0 
+        ins_tick = 0 ;
         deselect();
         break;
       }
@@ -451,7 +451,7 @@ void consoleintr(int (*getc)(void))
       while( i < input.e && is_space(input.buf[i % INPUT_BUF])) i++ ;
 
       if (i > input.cursor){
-        for( int k = input.cursor ; k < input.e ; k++){
+        for( int k = input.cursor ; k < i ; k++){
           consputc(input.buf[ k % INPUT_BUF]);
         }
         input.cursor = i ; 
