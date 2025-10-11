@@ -380,6 +380,32 @@ delete_selected_text()
   end_point = -1;
 }
 
+
+static void
+write_character(char c) 
+{
+  uint original_pos = read_cursor_pos();
+
+
+  for (unsigned j = input.e; j > input.cursor; j--)
+  {
+    input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
+    stamp[j % INPUT_BUF] = stamp[(j - 1) % INPUT_BUF];
+  }
+
+  input.buf[input.cursor % INPUT_BUF] = c;
+  stamp[input.cursor % INPUT_BUF] = ++ins_tick;
+
+  input.e++;
+  input.cursor++;
+
+  for (int i = input.cursor - 1; i < input.e; i++)
+  {
+    consputc(input.buf[i % INPUT_BUF]);
+  }
+
+  write_cursor_pos(original_pos + 1);
+}
 // end of extra functions MH
 
 void consoleintr(int (*getc)(void))
@@ -555,21 +581,16 @@ void consoleintr(int (*getc)(void))
     case C('V'): // Paste text from copy_buffer
       if (copy_buffer[0] != '\0')
       { // Check if there's anything to paste
-        delete_selected_text();
+        if(end_point != -1) {
+          delete_selected_text();
+        }
         int i = 0;
         while (copy_buffer[i] != '\0' && input.e < input.w + INPUT_BUF)
         {
           char char_to_paste = copy_buffer[i];
 
           // 1. Add the character to the input data buffer
-          input.buf[input.e % INPUT_BUF] = char_to_paste;
-          input.e++;
-
-          // 2. Update the internal cursor position
-          input.cursor++;
-
-          // 3. Display the character on the screen
-          consputc(char_to_paste);
+            write_character(char_to_paste);
 
           i++;
         }
@@ -611,39 +632,13 @@ void consoleintr(int (*getc)(void))
         {
           delete_selected_text();
         }
+        write_character(c);
 
-        // if (c == '\n')
-        // {
-        //   print_debug = 1;
-        // }
-
-        uint original_pos = read_cursor_pos();
-
-      
-        for (unsigned j = input.e; j > input.cursor; j--)
-        {
-          input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
-          stamp[j % INPUT_BUF] = stamp[(j - 1) % INPUT_BUF];
+        if (c == '\n') {
+          input.w = input.e;
+          wakeup(&input.r);
+          ins_tick = 0;
         }
-
-        input.buf[input.cursor % INPUT_BUF] = c;
-        stamp[input.cursor % INPUT_BUF] = ++ins_tick;
-
-        input.e++;
-        input.cursor++;
-
-        for (int i = input.cursor - 1; i < input.e; i++)
-        {
-          consputc(input.buf[i % INPUT_BUF]);
-        }
-
-        write_cursor_pos(original_pos + 1);
-
-        // if (c == '\n') {
-        //   input.w = input.e;
-        //   wakeup(&input.r);
-        //   ins_tick = 0;
-        // }
       }
       break;
     }
