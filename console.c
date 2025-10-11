@@ -559,8 +559,15 @@ void consoleintr(int (*getc)(void))
         }
 
         input.buf[input.e++ % INPUT_BUF] = c;
+
+        for(int j = input.e-1 ; j > input.cursor ; j--){
+          stamp[j % INPUT_BUF] = stamp[(j-1) % INPUT_BUF];
+        }
+        stamp[input.cursor % INPUT_BUF] = ++ ins_tick ;
+
         input.cursor++;
         consputc(c);
+        
         if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF)
         {
           input.w = input.e;
