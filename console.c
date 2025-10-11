@@ -325,6 +325,24 @@ delete_char_at(int index)
 }
 
 
+/*static void  dbug (){
+
+  
+        cprintf("debugg");
+
+        for ( unsigned i = input.w ; i< input.e ; i++){
+          cprintf("%u" , i% INPUT_BUF);
+
+        }
+        cprintf("\n");
+        for ( unsigned i = input.w ; i< input.e ; i++){
+          cprintf("%u" , stamp[i% INPUT_BUF]);
+
+        }
+        cprintf("\n");
+
+}*/
+
 static void
 backspace()
 {
@@ -612,13 +630,16 @@ void consoleintr(int (*getc)(void))
         memmove(&input.buf[(input.cursor + 1) % INPUT_BUF], 
                 &input.buf[input.cursor % INPUT_BUF], 
                 input.e - input.cursor);
+
         memmove(&stamp[(input.cursor + 1) % INPUT_BUF], 
                 &stamp[input.cursor % INPUT_BUF], 
                 input.e - input.cursor);
 
+
         input.buf[input.cursor % INPUT_BUF] = c;
         stamp[input.cursor % INPUT_BUF] = ++ins_tick;
-        
+
+
         input.e++;
         input.cursor++;
 
