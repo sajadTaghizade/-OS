@@ -313,7 +313,11 @@ backspace()
           &input.buf[(input.cursor + 1) % INPUT_BUF],
           input.e - (input.cursor + 1));
 
+  memmove(&stamp[input.cursor % INPUT_BUF],
+          &stamp(input.cursor + 1) % INPUT_BUF],
+          (input.e - (input.cursor + 1)) * sizeof(stamp(0)) );
   input.e--;
+  stamp[input.e % INPUT_BUF] = 0 ;
 
   write_cursor_pos(original_pos);
 
