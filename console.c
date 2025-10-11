@@ -335,7 +335,7 @@ backspace()
           input.e - (input.cursor + 1));
 
   memmove(&stamp[input.cursor % INPUT_BUF],
-          &stamp(input.cursor + 1) % INPUT_BUF],
+          &stamp[input.cursor + 1]% INPUT_BUF],
           (input.e - (input.cursor + 1)) * sizeof(stamp(0)) );
   input.e--;
   stamp[input.e % INPUT_BUF] = 0 ;
@@ -394,7 +394,7 @@ void consoleintr(int (*getc)(void))
         input.e--;
         consputc(BACKSPACE);
       }
-      int ins_tick = 0 
+      ins_tick = 0 ;
       start_point = -1;
       end_point = -1;
       break;
@@ -437,9 +437,9 @@ void consoleintr(int (*getc)(void))
     { 
 
       if(input.e == input.w){
-        input.w == input.e;
+        input.w = input.e;
         wakeup(&input.r);
-        int ins_tick = 0 
+        ins_tick = 0 
         deselect();
         break;
       }
@@ -451,7 +451,7 @@ void consoleintr(int (*getc)(void))
       while( i < input.e && is_space(input.buf[i % INPUT_BUF])) i++ ;
 
       if (i > input.cursor){
-        for( int k = input.cursor){
+        for( int k = input.cursor ; k < input.e ; k++){
           consputc(input.buf[ k % INPUT_BUF]);
         }
         input.cursor = i ; 
@@ -548,6 +548,8 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('V'): // Paste text from copy_buffer
+      deselect();
+
       if (copy_buffer[0] != '\0')
       { // Check if there's anything to paste
         delete_selected_text();
@@ -556,15 +558,15 @@ void consoleintr(int (*getc)(void))
         {
           char char_to_paste = copy_buffer[i];
 
-          // 1. Add the character to the input data buffer
-          input.buf[input.e % INPUT_BUF] = char_to_paste;
-          input.e++;
-
           for(int j = input.e-1 ; j > input.cursor ; j--){
+            input.buf[j % INPUT_BUF] = input.buf[(j - 1) % INPUT_BUF];
             stamp[j % INPUT_BUF] = stamp[(j-1) % INPUT_BUF];
           }
           stamp[input.cursor % INPUT_BUF] = ++ ins_tick ;
 
+          // 1. Add the character to the input data buffer
+          input.buf[input.e % INPUT_BUF] = char_to_paste;
+          input.e++;
 
           // 2. Update the internal cursor position
           input.cursor++;
@@ -578,6 +580,8 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('Z'):
+
+      deselect();
 
       if(input.e == input.w)
         break;
