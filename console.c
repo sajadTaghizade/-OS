@@ -277,17 +277,15 @@ consolehighlight(int start_pos, int end_pos, int on)
 static void
 deselect()
 {
-  if (end_point != -1)
-  {
-    ushort attr = 0x0700;
+  ushort attr = 0x0700;
 
-    for (int i = start_point; i <= end_point; i++)
-    {
-      crt[i] = (crt[i] & 0x00FF) | attr;
-    }
-    start_point = -1;
-    end_point = -1;
+  for (int i = start_point; i <= end_point; i++)
+  {
+    crt[i] = (crt[i] & 0x00FF) | attr;
   }
+  start_point = -1;
+  end_point = -1;
+
 }
 
 static void
@@ -398,6 +396,11 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('U'): // Kill line.
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+      
       while (input.e != input.w &&
              input.buf[(input.e - 1) % INPUT_BUF] != '\n')
       {
@@ -422,6 +425,11 @@ void consoleintr(int (*getc)(void))
 
       // new cases$
     case KEY_LF:
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor > input.w)
       {
         input.cursor--;
@@ -429,10 +437,14 @@ void consoleintr(int (*getc)(void))
         pos--;
         write_cursor_pos(pos);
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case KEY_RT:
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor < input.e)
       {
         input.cursor++;
@@ -440,10 +452,14 @@ void consoleintr(int (*getc)(void))
         pos++;
         write_cursor_pos(pos);
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case C('D'):
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor < input.e)
       {
         int i = input.cursor;
@@ -467,11 +483,15 @@ void consoleintr(int (*getc)(void))
           move_cursor(steps);
         }
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case C('A'):
     {
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       int current_pos = input.cursor;
       int beginning_of_word = current_pos;
       // go to beginning of word$
@@ -500,7 +520,7 @@ void consoleintr(int (*getc)(void))
 
         move_cursor(-steps);
       }
-      deselect(); // remove highlight from selected text MH
+      
       break;
     }
 
@@ -574,7 +594,11 @@ void consoleintr(int (*getc)(void))
 
     case C('Z'):
     {
-      deselect();
+      if (end_point != -1) {
+        deselect(); // remove highlight from selected text MH
+        break;
+      }
+
       if (input.e == input.w)
         break;
 
