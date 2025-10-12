@@ -584,7 +584,7 @@ void consoleintr(int (*getc)(void))
       for (int i = input.w ; i < input.e ; i++)
       {
         if (stamp[i % INPUT_BUF] > latest_stamp)
-        {
+        {  
           latest_stamp = stamp[i % INPUT_BUF];
           index_to_remove = i;
         }
@@ -603,18 +603,20 @@ void consoleintr(int (*getc)(void))
     {
       if (c != 0 && (input.e - input.w) < INPUT_BUF)
       {
-        if (end_point != -1)
-        {
-          delete_selected_text();
-        }
-        write_character(c);
-        
-        
-
-        if (c == '\n') {
-          input.w = input.e;
-          wakeup(&input.r);
-          ins_tick = 0;
+        if(c != '\n') {
+          if (end_point != -1) {
+            delete_selected_text();
+          }
+          write_character(c); 
+        } else {
+          input.buf[input.e++] = c;
+          consputc(c);
+          if (c == '\n') {
+            input.w = input.e;
+            input.cursor = input.e;
+            wakeup(&input.r);
+            ins_tick = 0;
+          }
         }
       }
       break;
