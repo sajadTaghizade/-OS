@@ -291,44 +291,6 @@ deselect()
 }
 
 static void
-delete_char_at(int index)
-{
-  if (index < input.w || index >= input.e)
-    return;
-
-  uint original_pos = read_cursor_pos();
-  int new_cursor_offset = (input.cursor > index) ? -1 : 0;
-
-  for (unsigned j = index ; j < input.e - 1; j++)
-  {
-    input.buf[j % INPUT_BUF] = input.buf[(j + 1) % INPUT_BUF];
-  }
-
-  for (unsigned j = index; j < input.e - 1; j++)
-  {
-    stamp[j % INPUT_BUF] = stamp[(j + 1) % INPUT_BUF];
-  }
-
-  input.e--;
-  stamp[input.e % INPUT_BUF] = 0;
-
-  if (input.cursor > index)
-    input.cursor--;
-
-  write_cursor_pos(read_cursor_pos() - (input.cursor - index));
-
-  for (int i = index; i < input.e; i++)
-  {
-    consputc(input.buf[i % INPUT_BUF]);
-  }
-
-  consputc(' ');
-
-  write_cursor_pos(original_pos + new_cursor_offset);
-}
-
-
-static void
 backspace()
 {
   if (input.cursor == input.w)
@@ -360,6 +322,18 @@ backspace()
 
   write_cursor_pos(original_pos);
 }
+
+static void
+delete_char_at(int index)
+{
+  int temp = input.cursor;
+  input.cursor = index +1;
+  uint current_pos = read_cursor_pos();
+  current_pos += input.cursor - temp;
+  write_cursor_pos(current_pos);
+  backspace();
+}
+
 
 static void
 delete_selected_text()
@@ -430,6 +404,7 @@ void consoleintr(int (*getc)(void))
         input.e--;
         consputc(BACKSPACE);
       }
+      input.cursor = input.w;
       start_point = -1;
       end_point = -1;
       break;
@@ -633,6 +608,8 @@ void consoleintr(int (*getc)(void))
           delete_selected_text();
         }
         write_character(c);
+        
+        
 
         if (c == '\n') {
           input.w = input.e;
