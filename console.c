@@ -14,8 +14,9 @@
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
-
+// #include "string.h"
 #include "kbd.h"
+
 #define INPUT_BUF 128
 
 static void consputc(int);
@@ -408,6 +409,141 @@ write_character(char c)
 }
 // end of extra functions MH
 
+#define MAX_MATCHES 32
+static char last_prefix[INPUT_BUF];
+static char matches[MAX_MATCHES][DIRSIZ]; // DIRSIZ حداکثر طول نام فایل است
+static int match_count = 0;
+static int last_cursor = -1;
+#define MAX_COMMANDS 64 // حداکثر تعداد دستورات
+static char command_list[MAX_COMMANDS][DIRSIZ];
+static int num_commands = 0;
+
+// این تابع لیست دستورات را در هنگام بوت بارگذاری می‌کند
+// نسخه نهایی و امن: لیست دستورات را به صورت دستی تعریف می‌کند
+static void
+autocomplete_init(void)
+{
+  num_commands = 0; // ریست کردن شمارنده
+
+  // لیست تمام دستورات پیش‌فرض xv6
+  char* cmds[] = {
+    "cat", "echo", "forktest", "grep", "kill", "ln", "ls", "mkdir",
+    "rm", "sh", "stressfs", "usertests", "wc", "zombie"
+    // اگر برنامه جدیدی مثل find_sum اضافه کردید، نام آن را هم اینجا اضافه کنید
+    // , "find_sum"
+  };
+
+  int num_cmds_to_load = sizeof(cmds) / sizeof(cmds[0]);
+
+  for (int i = 0; i < num_cmds_to_load && i < MAX_COMMANDS; i++) {
+    safestrcpy(command_list[num_commands], cmds[i], DIRSIZ);
+    num_commands++;
+  }
+}
+// ...
+
+// تابع برای جستجو در فایل سیستم
+// Corrected function for searching in the file system from the kernel
+// نسخه نهایی و سریع find_matches
+
+
+static void
+find_matches(char *prefix)
+{
+  int prefix_len = strlen(prefix);
+  match_count = 0;
+
+  for(int i = 0; i < num_commands; i++){
+    if(strncmp(prefix, command_list[i], prefix_len) == 0){
+      if(match_count < MAX_MATCHES){
+        safestrcpy(matches[match_count], command_list[i], DIRSIZ);
+        match_count++;
+      }
+    }
+  }
+}
+
+// تابع جدید برای پیدا کردن بلندترین پیشوند مشترک
+static int
+find_longest_common_prefix(void)
+{
+  if (match_count <= 0)
+    return 0;
+
+  int lcp_len = strlen(matches[0]);
+  for (int i = 1; i < match_count; i++) {
+    int j = 0;
+    while (j < lcp_len && j < strlen(matches[i]) && matches[0][j] == matches[i][j]) {
+      j++;
+    }
+    lcp_len = j;
+  }
+  return lcp_len;
+}
+
+// تابع اصلی بازنویسی شده برای مدیریت تکمیل خودکار (سازگار با هسته)
+// نسخه نهایی و کامل handle_autocomplete
+static void
+handle_autocomplete()
+{
+  // ۱. استخراج پیشوند فعلی
+  char prefix[INPUT_BUF];
+  int i = input.cursor;
+  while(i > input.w && input.buf[(i-1) % INPUT_BUF] != ' '){
+    i--;
+  }
+  int prefix_len = input.cursor - i;
+  memmove(prefix, &input.buf[i % INPUT_BUF], prefix_len);
+  prefix[prefix_len] = '\0';
+
+  // بررسی برای فشار مجدد Tab
+  if((strlen(prefix) == strlen(last_prefix)) && 
+     (strncmp(prefix, last_prefix, prefix_len) == 0) && 
+     (input.cursor == last_cursor))
+  {
+    // این فشار دوم Tab است، لیست نتایج را چاپ کن
+    if(match_count > 1){
+      release(&cons.lock); // قفل را قبل از چاپ آزاد کن
+      cprintf("\n");
+      for(int j=0; j < match_count; j++){
+        cprintf("%s  ", matches[j]);
+      }
+      cprintf("\n");
+      // بازрисовانی خط فرمان فعلی
+      for(int k=input.w; k < input.e; k++)
+        consputc(input.buf[k % INPUT_BUF]);
+      acquire(&cons.lock); // دوباره قفل را بگیر
+    }
+    return;
+  }
+  
+  // این فشار اول Tab است، جستجو را انجام بده
+  find_matches(prefix);
+
+  if(match_count == 1){
+    // سناریو ۱: یک تطابق
+    int remaining_len = strlen(matches[0]) - prefix_len;
+    for(int j=0; j < remaining_len; j++)
+      write_character(matches[0][prefix_len + j]);
+    write_character(' ');
+
+  } else if (match_count > 1){
+    // سناریو ۲: چند تطابق
+    int lcp_len = find_longest_common_prefix();
+    int remaining_len = lcp_len - prefix_len;
+
+    if (remaining_len > 0) {
+      // اگر پیشوند مشترک بلندتر بود، آن را کامل کن
+      for(int j=0; j < remaining_len; j++)
+        write_character(matches[0][prefix_len + j]);
+    }
+    
+    // وضعیت را برای فشار بعدی Tab ذخیره کن
+    safestrcpy(last_prefix, prefix, INPUT_BUF);
+    last_cursor = input.cursor;
+  }
+}
+
 void consoleintr(int (*getc)(void))
 {
   int print_debug = 0;
@@ -622,6 +758,10 @@ void consoleintr(int (*getc)(void))
       break;
     }
 
+    case '\t': // کلید Tab
+      handle_autocomplete();
+      break;
+
       // end of new cases MH
 
     default:
@@ -733,6 +873,8 @@ void consoleinit(void)
   devsw[CONSOLE].write = consolewrite;
   devsw[CONSOLE].read = consoleread;
   cons.locking = 1;
+
+    autocomplete_init(); 
 
   ioapicenable(IRQ_KBD, 0);
 }
