@@ -278,56 +278,16 @@ consolehighlight(int start_pos, int end_pos, int on)
 static void
 deselect()
 {
-  if (end_point != -1)
-  {
-    ushort attr = 0x0700;
+  ushort attr = 0x0700;
 
-    for (int i = start_point; i <= end_point; i++)
-    {
-      crt[i] = (crt[i] & 0x00FF) | attr;
-    }
-    start_point = -1;
-    end_point = -1;
+  for (int i = start_point; i <= end_point; i++)
+  {
+    crt[i] = (crt[i] & 0x00FF) | attr;
   }
+  start_point = -1;
+  end_point = -1;
+
 }
-
-static void
-delete_char_at(int index)
-{
-  if (index < input.w || index >= input.e)
-    return;
-
-  uint original_pos = read_cursor_pos();
-  int new_cursor_offset = (input.cursor > index) ? -1 : 0;
-
-  for (unsigned j = index ; j < input.e - 1; j++)
-  {
-    input.buf[j % INPUT_BUF] = input.buf[(j + 1) % INPUT_BUF];
-  }
-
-  for (unsigned j = index; j < input.e - 1; j++)
-  {
-    stamp[j % INPUT_BUF] = stamp[(j + 1) % INPUT_BUF];
-  }
-
-  input.e--;
-  stamp[input.e % INPUT_BUF] = 0;
-
-  if (input.cursor > index)
-    input.cursor--;
-
-  write_cursor_pos(read_cursor_pos() - (input.cursor - index));
-
-  for (int i = index; i < input.e; i++)
-  {
-    consputc(input.buf[i % INPUT_BUF]);
-  }
-
-  consputc(' ');
-
-  write_cursor_pos(original_pos + new_cursor_offset);
-}
-
 
 static void
 backspace()
@@ -361,6 +321,18 @@ backspace()
 
   write_cursor_pos(original_pos);
 }
+
+static void
+delete_char_at(int index)
+{
+  int temp = input.cursor;
+  input.cursor = index +1;
+  uint current_pos = read_cursor_pos();
+  current_pos += input.cursor - temp;
+  write_cursor_pos(current_pos);
+  backspace();
+}
+
 
 static void
 delete_selected_text()
@@ -560,12 +532,18 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('U'): // Kill line.
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+      
       while (input.e != input.w &&
              input.buf[(input.e - 1) % INPUT_BUF] != '\n')
       {
         input.e--;
         consputc(BACKSPACE);
       }
+      input.cursor = input.w;
       start_point = -1;
       end_point = -1;
       break;
@@ -583,6 +561,11 @@ void consoleintr(int (*getc)(void))
 
       // new cases$
     case KEY_LF:
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor > input.w)
       {
         input.cursor--;
@@ -590,10 +573,14 @@ void consoleintr(int (*getc)(void))
         pos--;
         write_cursor_pos(pos);
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case KEY_RT:
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor < input.e)
       {
         input.cursor++;
@@ -601,10 +588,14 @@ void consoleintr(int (*getc)(void))
         pos++;
         write_cursor_pos(pos);
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case C('D'):
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       if (input.cursor < input.e)
       {
         int i = input.cursor;
@@ -628,11 +619,15 @@ void consoleintr(int (*getc)(void))
           move_cursor(steps);
         }
       }
-      deselect(); // remove highlight from selected text MH
       break;
 
     case C('A'):
     {
+      if (end_point != -1) {
+          deselect(); // remove highlight from selected text MH
+          break;
+      }
+
       int current_pos = input.cursor;
       int beginning_of_word = current_pos;
       // go to beginning of word$
@@ -661,7 +656,7 @@ void consoleintr(int (*getc)(void))
 
         move_cursor(-steps);
       }
-      deselect(); // remove highlight from selected text MH
+      
       break;
     }
 
@@ -735,7 +730,11 @@ void consoleintr(int (*getc)(void))
 
     case C('Z'):
     {
-      deselect();
+      if (end_point != -1) {
+        deselect(); // remove highlight from selected text MH
+        break;
+      }
+
       if (input.e == input.w)
         break;
 
@@ -745,7 +744,7 @@ void consoleintr(int (*getc)(void))
       for (int i = input.w ; i < input.e ; i++)
       {
         if (stamp[i % INPUT_BUF] > latest_stamp)
-        {
+        {  
           latest_stamp = stamp[i % INPUT_BUF];
           index_to_remove = i;
         }
@@ -768,16 +767,20 @@ void consoleintr(int (*getc)(void))
     {
       if (c != 0 && (input.e - input.w) < INPUT_BUF)
       {
-        if (end_point != -1)
-        {
-          delete_selected_text();
-        }
-        write_character(c);
-
-        if (c == '\n') {
-          input.w = input.e;
-          wakeup(&input.r);
-          ins_tick = 0;
+        if(c != '\n') {
+          if (end_point != -1) {
+            delete_selected_text();
+          }
+          write_character(c); 
+        } else {
+          input.buf[input.e++] = c;
+          consputc(c);
+          if (c == '\n') {
+            input.w = input.e;
+            input.cursor = input.e;
+            wakeup(&input.r);
+            ins_tick = 0;
+          }
         }
       }
       break;
