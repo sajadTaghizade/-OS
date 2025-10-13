@@ -379,21 +379,18 @@ write_character(char c)
 
 #define MAX_MATCHES 32
 static char last_prefix[INPUT_BUF];
-static char matches[MAX_MATCHES][DIRSIZ]; // DIRSIZ حداکثر طول نام فایل است
+static char matches[MAX_MATCHES][DIRSIZ]; 
 static int match_count = 0;
 static int last_cursor = -1;
-#define MAX_COMMANDS 64 // حداکثر تعداد دستورات
+#define MAX_COMMANDS 64
 static char command_list[MAX_COMMANDS][DIRSIZ];
 static int num_commands = 0;
 
-// این تابع لیست دستورات را در هنگام بوت بارگذاری می‌کند
-// نسخه نهایی و امن: لیست دستورات را به صورت دستی تعریف می‌کند
 static void
 autocomplete_init(void)
 {
-  num_commands = 0; // ریست کردن شمارنده
+  num_commands = 0;
 
-  // لیست تمام دستورات پیش‌فرض xv6
   char *cmds[] = {
       "cat", "echo", "forktest", "grep", "kill", "ln", "ls", "mkdir",
       "rm", "sh", "stressfs", "usertests", "wc", "zombie", "zobie"
@@ -409,11 +406,6 @@ autocomplete_init(void)
     num_commands++;
   }
 }
-// ...
-
-// تابع برای جستجو در فایل سیستم
-// Corrected function for searching in the file system from the kernel
-// نسخه نهایی و سریع find_matches
 
 static void
 find_matches(char *prefix)
@@ -434,7 +426,6 @@ find_matches(char *prefix)
   }
 }
 
-// تابع جدید برای پیدا کردن بلندترین پیشوند مشترک
 static int
 find_longest_common_prefix(void)
 {
@@ -476,7 +467,6 @@ remove_line()
 static void
 handle_autocomplete()
 {
-  // ۱. استخراج پیشوند فعلی
   // int current_pos = read_cursor_pos();
   // current_pos += input.e - input.cursor;
   // input.cursor = input.e;
@@ -488,7 +478,7 @@ handle_autocomplete()
     i--;
   }
 
-  
+
   int prefix_len = input.e - i;
   memmove(prefix, &input.buf[i % INPUT_BUF], prefix_len);
   prefix[prefix_len] = '\0';
