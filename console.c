@@ -286,7 +286,6 @@ deselect()
   }
   start_point = -1;
   end_point = -1;
-
 }
 
 static void
@@ -326,13 +325,12 @@ static void
 delete_char_at(int index)
 {
   int temp = input.cursor;
-  input.cursor = index +1;
+  input.cursor = index + 1;
   uint current_pos = read_cursor_pos();
   current_pos += input.cursor - temp;
   write_cursor_pos(current_pos);
   backspace();
 }
-
 
 static void
 delete_selected_text()
@@ -353,12 +351,10 @@ delete_selected_text()
   end_point = -1;
 }
 
-
 static void
-write_character(char c) 
+write_character(char c)
 {
   uint original_pos = read_cursor_pos();
-
 
   for (unsigned j = input.e; j > input.cursor; j--)
   {
@@ -398,16 +394,17 @@ autocomplete_init(void)
   num_commands = 0; // ریست کردن شمارنده
 
   // لیست تمام دستورات پیش‌فرض xv6
-  char* cmds[] = {
-    "cat", "echo", "forktest", "grep", "kill", "ln", "ls", "mkdir",
-    "rm", "sh", "stressfs", "usertests", "wc", "zombie"
-    // اگر برنامه جدیدی مثل find_sum اضافه کردید، نام آن را هم اینجا اضافه کنید
-    // , "find_sum"
+  char *cmds[] = {
+      "cat", "echo", "forktest", "grep", "kill", "ln", "ls", "mkdir",
+      "rm", "sh", "stressfs", "usertests", "wc", "zombie", "zobie"
+      // اگر برنامه جدیدی مثل find_sum اضافه کردید، نام آن را هم اینجا اضافه کنید
+      // , "find_sum"
   };
 
   int num_cmds_to_load = sizeof(cmds) / sizeof(cmds[0]);
 
-  for (int i = 0; i < num_cmds_to_load && i < MAX_COMMANDS; i++) {
+  for (int i = 0; i < num_cmds_to_load && i < MAX_COMMANDS; i++)
+  {
     safestrcpy(command_list[num_commands], cmds[i], DIRSIZ);
     num_commands++;
   }
@@ -418,16 +415,18 @@ autocomplete_init(void)
 // Corrected function for searching in the file system from the kernel
 // نسخه نهایی و سریع find_matches
 
-
 static void
 find_matches(char *prefix)
 {
   int prefix_len = strlen(prefix);
   match_count = 0;
 
-  for(int i = 0; i < num_commands; i++){
-    if(strncmp(prefix, command_list[i], prefix_len) == 0){
-      if(match_count < MAX_MATCHES){
+  for (int i = 0; i < num_commands; i++)
+  {
+    if (strncmp(prefix, command_list[i], prefix_len) == 0)
+    {
+      if (match_count < MAX_MATCHES)
+      {
         safestrcpy(matches[match_count], command_list[i], DIRSIZ);
         match_count++;
       }
@@ -443,9 +442,11 @@ find_longest_common_prefix(void)
     return 0;
 
   int lcp_len = strlen(matches[0]);
-  for (int i = 1; i < match_count; i++) {
+  for (int i = 1; i < match_count; i++)
+  {
     int j = 0;
-    while (j < lcp_len && j < strlen(matches[i]) && matches[0][j] == matches[i][j]) {
+    while (j < lcp_len && j < strlen(matches[i]) && matches[0][j] == matches[i][j])
+    {
       j++;
     }
     lcp_len = j;
@@ -453,64 +454,86 @@ find_longest_common_prefix(void)
   return lcp_len;
 }
 
-// تابع اصلی بازنویسی شده برای مدیریت تکمیل خودکار (سازگار با هسته)
-// نسخه نهایی و کامل handle_autocomplete
+static void
+remove_line()
+{
+  int current_pos = read_cursor_pos();
+  current_pos += input.e - input.cursor;
+  input.cursor = input.e;
+  write_cursor_pos(current_pos);
+  while (input.e != input.w &&
+         input.buf[(input.e - 1) % INPUT_BUF] != '\n')
+  {
+    input.e--;
+    consputc(BACKSPACE);
+  }
+  input.w = input.e;
+  input.cursor = input.w;
+  start_point = -1;
+  end_point = -1;
+}
+
 static void
 handle_autocomplete()
 {
   // ۱. استخراج پیشوند فعلی
+  // int current_pos = read_cursor_pos();
+  // current_pos += input.e - input.cursor;
+  // input.cursor = input.e;
+  // write_cursor_pos(current_pos);
   char prefix[INPUT_BUF];
-  int i = input.cursor;
-  while(i > input.w && input.buf[(i-1) % INPUT_BUF] != ' '){
+  int i = input.e;
+  while (i > input.w)
+  {
     i--;
   }
-  int prefix_len = input.cursor - i;
+
+  int prefix_len = input.e - i;
   memmove(prefix, &input.buf[i % INPUT_BUF], prefix_len);
   prefix[prefix_len] = '\0';
 
-  // بررسی برای فشار مجدد Tab
-  if((strlen(prefix) == strlen(last_prefix)) && 
-     (strncmp(prefix, last_prefix, prefix_len) == 0) && 
-     (input.cursor == last_cursor))
+  if ((strlen(prefix) == strlen(last_prefix)) && (strncmp(prefix, last_prefix, prefix_len) == 0) && (input.cursor == last_cursor))
   {
-    // این فشار دوم Tab است، لیست نتایج را چاپ کن
-    if(match_count > 1){
-      release(&cons.lock); // قفل را قبل از چاپ آزاد کن
+    if (match_count > 1)
+    {
+      // to handele  Unauthorized access to the memory BEGIN
+      release(&cons.lock);
+
       cprintf("\n");
-      for(int j=0; j < match_count; j++){
+      for (int j = 0; j < match_count; j++)
+      {
         cprintf("%s  ", matches[j]);
       }
       cprintf("\n");
-      // بازрисовانی خط فرمان فعلی
-      for(int k=input.w; k < input.e; k++)
+      for (int k = input.w; k < input.e; k++)
         consputc(input.buf[k % INPUT_BUF]);
-      acquire(&cons.lock); // دوباره قفل را بگیر
+      // to handele  Unauthorized access to the memory END
+      acquire(&cons.lock);
     }
     return;
   }
-  
-  // این فشار اول Tab است، جستجو را انجام بده
+
   find_matches(prefix);
 
-  if(match_count == 1){
-    // سناریو ۱: یک تطابق
-    int remaining_len = strlen(matches[0]) - prefix_len;
-    for(int j=0; j < remaining_len; j++)
-      write_character(matches[0][prefix_len + j]);
+  if (match_count == 1)
+  {
+    remove_line();
+    int len = strlen(matches[0]);
+    for (int j = 0; j < len; j++)
+      write_character(matches[0][j]);
     write_character(' ');
-
-  } else if (match_count > 1){
-    // سناریو ۲: چند تطابق
+  }
+  else if (match_count > 1)
+  {
     int lcp_len = find_longest_common_prefix();
     int remaining_len = lcp_len - prefix_len;
 
-    if (remaining_len > 0) {
-      // اگر پیشوند مشترک بلندتر بود، آن را کامل کن
-      for(int j=0; j < remaining_len; j++)
+    if (remaining_len > 0)
+    {
+      for (int j = 0; j < remaining_len; j++)
         write_character(matches[0][prefix_len + j]);
     }
-    
-    // وضعیت را برای فشار بعدی Tab ذخیره کن
+
     safestrcpy(last_prefix, prefix, INPUT_BUF);
     last_cursor = input.cursor;
   }
@@ -532,20 +555,13 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('U'): // Kill line.
-      if (end_point != -1) {
-          deselect(); // remove highlight from selected text MH
-          break;
-      }
-      
-      while (input.e != input.w &&
-             input.buf[(input.e - 1) % INPUT_BUF] != '\n')
+      if (end_point != -1)
       {
-        input.e--;
-        consputc(BACKSPACE);
+        deselect(); // remove highlight from selected text MH
+        break;
       }
-      input.cursor = input.w;
-      start_point = -1;
-      end_point = -1;
+
+      remove_line();
       break;
     case C('H'):
     case '\x7f': // Backspace
@@ -561,9 +577,10 @@ void consoleintr(int (*getc)(void))
 
       // new cases$
     case KEY_LF:
-      if (end_point != -1) {
-          deselect(); // remove highlight from selected text MH
-          break;
+      if (end_point != -1)
+      {
+        deselect(); // remove highlight from selected text MH
+        break;
       }
 
       if (input.cursor > input.w)
@@ -576,9 +593,10 @@ void consoleintr(int (*getc)(void))
       break;
 
     case KEY_RT:
-      if (end_point != -1) {
-          deselect(); // remove highlight from selected text MH
-          break;
+      if (end_point != -1)
+      {
+        deselect(); // remove highlight from selected text MH
+        break;
       }
 
       if (input.cursor < input.e)
@@ -591,9 +609,10 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('D'):
-      if (end_point != -1) {
-          deselect(); // remove highlight from selected text MH
-          break;
+      if (end_point != -1)
+      {
+        deselect(); // remove highlight from selected text MH
+        break;
       }
 
       if (input.cursor < input.e)
@@ -623,9 +642,10 @@ void consoleintr(int (*getc)(void))
 
     case C('A'):
     {
-      if (end_point != -1) {
-          deselect(); // remove highlight from selected text MH
-          break;
+      if (end_point != -1)
+      {
+        deselect(); // remove highlight from selected text MH
+        break;
       }
 
       int current_pos = input.cursor;
@@ -656,7 +676,7 @@ void consoleintr(int (*getc)(void))
 
         move_cursor(-steps);
       }
-      
+
       break;
     }
 
@@ -712,7 +732,8 @@ void consoleintr(int (*getc)(void))
     case C('V'): // Paste text from copy_buffer
       if (copy_buffer[0] != '\0')
       { // Check if there's anything to paste
-        if(end_point != -1) {
+        if (end_point != -1)
+        {
           delete_selected_text();
         }
         int i = 0;
@@ -721,16 +742,19 @@ void consoleintr(int (*getc)(void))
           char char_to_paste = copy_buffer[i];
 
           // 1. Add the character to the input data buffer
-            write_character(char_to_paste);
+          write_character(char_to_paste);
 
           i++;
         }
       }
       break;
+      // end of new cases MH
+
 
     case C('Z'):
     {
-      if (end_point != -1) {
+      if (end_point != -1)
+      {
         deselect(); // remove highlight from selected text MH
         break;
       }
@@ -741,10 +765,10 @@ void consoleintr(int (*getc)(void))
       int latest_stamp = -1;
       int index_to_remove = -1;
 
-      for (int i = input.w ; i < input.e ; i++)
+      for (int i = input.w; i < input.e; i++)
       {
         if (stamp[i % INPUT_BUF] > latest_stamp)
-        {  
+        {
           latest_stamp = stamp[i % INPUT_BUF];
           index_to_remove = i;
         }
@@ -757,25 +781,29 @@ void consoleintr(int (*getc)(void))
       break;
     }
 
-    case '\t': // کلید Tab
+    case '\t': 
       handle_autocomplete();
       break;
 
-      // end of new cases MH
 
     default:
     {
       if (c != 0 && (input.e - input.w) < INPUT_BUF)
       {
-        if(c != '\n') {
-          if (end_point != -1) {
+        if (c != '\n')
+        {
+          if (end_point != -1)
+          {
             delete_selected_text();
           }
-          write_character(c); 
-        } else {
+          write_character(c);
+        }
+        else
+        {
           input.buf[input.e++] = c;
           consputc(c);
-          if (c == '\n') {
+          if (c == '\n')
+          {
             input.w = input.e;
             input.cursor = input.e;
             wakeup(&input.r);
@@ -877,7 +905,7 @@ void consoleinit(void)
   devsw[CONSOLE].read = consoleread;
   cons.locking = 1;
 
-    autocomplete_init(); 
+  autocomplete_init();
 
   ioapicenable(IRQ_KBD, 0);
 }
