@@ -488,6 +488,7 @@ handle_autocomplete()
     i--;
   }
 
+  
   int prefix_len = input.e - i;
   memmove(prefix, &input.buf[i % INPUT_BUF], prefix_len);
   prefix[prefix_len] = '\0';
