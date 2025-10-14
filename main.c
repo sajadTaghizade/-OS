@@ -32,7 +32,6 @@ main(void)
   tvinit();        // trap vectors
   binit();         // buffer cache
   fileinit();      // file table
-        // autocomplete_init(); // <-- مکان صحیح و جدید
 
   ideinit();       // disk 
 
