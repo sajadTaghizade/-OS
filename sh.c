@@ -229,126 +229,102 @@ void runcmd(struct cmd *cmd)
   exit();
 }
 
+int
+getcmd(char *buf, int nbuf)
+{
+  printf(2, "$ ");
+  memset(buf, 0, nbuf);
+  gets(buf, nbuf);
+  if(buf[0] == 0) // EOF
+    return -1;
+  return 0;
+}
 // تابع getcmd قدیمی حذف شد. منطق آن به main منتقل شده است.
 
 // ----------- تابع main جدید با قابلیت تکمیل خودکار -----------
+// ----------- تابع main کامل با مدیریت Tab و Enter -----------
 int
 main(void)
 {
-  
-    char buf[MAX_CMD_LEN];
-    int n = 0; // طول فعلی دستور در بافر
-    int fd;
+  static char buf[MAX_CMD_LEN];
+  int fd;
 
-    // اطمینان از اینکه سه توصیف‌گر فایل استاندارد باز هستند
-    while ((fd = open("console", O_RDWR)) >= 0) {
-        if (fd >= 3) {
-            close(fd);
-            break;
-        }
+  // Ensure that three file descriptors are open.
+  while((fd = open("console", O_RDWR)) >= 0){
+    if(fd >= 3){
+      close(fd);
+      break;
+    }
+  }
+
+  // Main loop to get and process commands
+  while(getcmd(buf, sizeof(buf)) >= 0){
+    int len = strlen(buf);
+
+    // Check if getcmd returned because of a Tab press
+    if(len > 0 && buf[len-1] == '\t'){
+      // --- This is an autocomplete request ---
+      buf[len-1] = '\0'; // Remove the tab character from the buffer
+
+      // Check if this is a second consecutive tab press for the same prefix
+      if (strcmp(buf, last_prefix) == 0 && (len - 1) == last_cursor && match_count > 1) {
+          // It's the second press: show all options
+          printf(1, "\n");
+          for (int j = 0; j < match_count; j++) {
+              printf(1, "%s  ", matches[j]);
+          }
+          printf(1, "\n$ %s", buf); // Reprint the current prompt and buffer
+      } else {
+          // It's the first press: find matches
+          get_all_commands();
+          find_matches(buf);
+
+          if(match_count == 1){
+            // If there's a single match, complete it and add a space
+            strcpy(buf, matches[0]);
+            strcat(buf, " ");
+            printf(1, "\r$ %s", buf); // Redraw the entire line
+          } else if (match_count > 1) {
+            // If there are multiple matches, complete the longest common prefix
+            int lcp_len = find_longest_common_prefix();
+            if (lcp_len > strlen(buf)) {
+                strncpy(buf, matches[0], lcp_len);
+                buf[lcp_len] = '\0';
+                printf(1, "\r$ %s", buf); // Redraw the line with the common prefix
+            }
+          } else {
+            // If no matches, just redraw the current line (optional, provides feedback)
+            printf(1, "\r$ %s", buf);
+          }
+      }
+      
+      // Save the current state for the next potential tab press
+      strcpy(last_prefix, buf);
+      last_cursor = strlen(buf);
+
+      // Go back to the start of the loop to wait for more input, don't execute
+      continue;
     }
 
-    // نمایش اعلان اولیه شل
-    printf(1, "$ ");
-
-    // حلقه اصلی برای خواندن ورودی کاراکتر به کاراکتر
-    while (1) {
-      // printf(1, "xxxxxxxxxx");
-        char c;
-        
-        // یک کاراکتر از کنسول بخوان
-        if (read(0, &c, 1) != 1) {
-            printf(1, "\n");
-            exit();
-        }
-
-        switch (c) {
-            case '\n': // Enter
-            case '\r':
-            
-                printf(1, "\n");
-                buf[n] = '\0';
-                
-                if(buf[0] == 0) { // اگر دستور خالی بود
-                    printf(1, "$ ");
-                    continue;
-                }
-
-                // دستور cd باید در پروسه پدر اجرا شود
-                if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
-                    if (chdir(buf + 3) < 0)
-                        printf(2, "cannot cd %s\n", buf + 3);
-                } else {
-                    if (fork1() == 0)
-                        runcmd(parsecmd(buf));
-                    wait();
-                }
-
-                n = 0; // بافر را برای دستور بعدی ریست کن
-                memset(buf, 0, sizeof(buf));
-                printf(1, "$ ");
-                break;
-
-            case '\t': // Tab
-            // printf(1,"\n%s\n", buf);
-                buf[n] = '\0'; 
-                
-                // تشخیص فشار دوم تب
-                if (strcmp(buf, last_prefix) == 0 && n == last_cursor) {
-                    if (match_count > 1) {
-                        printf(1, "\n");
-                        for (int j = 0; j < match_count; j++) {
-                            printf(1, "%s  ", matches[j]);
-                        }
-                        printf(1, "\n$ %s", buf); // اعلان و دستور فعلی را دوباره چاپ کن
-                    }
-                } else { // فشار اول تب
-
-                    get_all_commands(); 
-
-                    find_matches(buf);
-                    
-                    if (match_count == 1) { // فقط یک نتیجه
-                      // printf(1, "%send",matches[0]);
-                      
-                        strcpy(buf, matches[0]);
-                        strcat(buf, " ");
-                        n = strlen(buf);
-                        printf(1, "\r$ %s", buf); 
-                    } else if (match_count > 1) { // چند نتیجه
-                        int lcp_len = find_longest_common_prefix();
-                        if (lcp_len > n) {
-                            strncpy(buf, matches[0], lcp_len);
-                            n = lcp_len;
-                            buf[n] = '\0';
-                            printf(1, "\r$ %s", buf);
-                        }
-                    }
-                    // printf(1, "dddddd");
-
-                    strcpy(last_prefix, buf);
-                    last_cursor = n;
-                }
-                break;
-
-            case 0x7F: // Backspace یا DEL
-            case '\b':
-                if (n > 0) {
-                    n--;
-                    printf(1, "\b \b"); // کاراکتر را از صفحه پاک کن
-                }
-                break;
-
-            default: // کاراکترهای عادی
-                if (n < sizeof(buf) - 1) {
-                    buf[n++] = c;
-                    // printf(1, "%c", c); // اکو کردن کاراکتر روی صفحه
-                    
-                }
-                break;
-        }
+    // --- This is a normal command (terminated by Enter) ---
+    // The newline is usually part of the buffer from gets(), so we chop it.
+    if(len > 0 && buf[len-1] == '\n'){
+        buf[len-1] = 0;
     }
-    exit();
+
+    // Handle the 'cd' command, which must run in the parent process (the shell)
+    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
+      if(chdir(buf+3) < 0)
+        printf(2, "cannot cd %s\n", buf+3);
+      continue; // Don't fork/exec for cd
+    }
+    
+    // For all other commands, fork a child process to execute it
+    if(fork1() == 0)
+      runcmd(parsecmd(buf));
+    wait();
+  }
+  exit();
 }
 // ----------- پایان تابع main جدید -----------
 

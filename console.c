@@ -527,15 +527,9 @@ remove_line()
 //     last_cursor = input.cursor;
 //   }
 // }
-int tempW = -1;
+
 void consoleintr(int (*getc)(void))
 {
-  if(tempW == -1) {
-    tempW = input.w;
-  } 
-  
-  input.w = tempW;
-
   int print_debug = 0;
   int c, doprocdump = 0;
 
@@ -786,41 +780,36 @@ void consoleintr(int (*getc)(void))
       //   break;
 
       // Inside consoleintr in console.c
+    // در فایل console.c، داخل تابع consoleintr
+
     default:
     {
-      if (c != 0 && (input.e - input.w) < INPUT_BUF)
-      {
-        // Treat Tab as a special character that the shell needs to see immediately
-        if (c == '\t')
-        {
-          // Put the tab in the buffer so the shell can read it
+      if(c != 0 && input.e-input.r < INPUT_BUF){
+        // اگر کلید فشرده شده Tab بود
+        if(c == '\t'){
+          // آن را در بافر قرار بده
           input.buf[input.e++ % INPUT_BUF] = c;
-          tempW = input.w;
-
-
-          input.w = input.e; // Make it available to read
-          wakeup(&input.r);  // Wake up the shell
-          // input.w = temp;
-
-
+          // و بلافاصله خط را برای خواندن "نهایی" کن
+          input.w = input.e;
+          // و شل را که در gets() خواب است، بیدار کن
+          wakeup(&input.r);
         }
-        else if (c != '\n')
-        { // Handle normal characters
-          if (end_point != -1)
-          {
+        // اگر کلید Enter بود
+        else if(c == '\n' || c == '\r'){
+          input.buf[input.e++ % INPUT_BUF] = '\n';
+          consputc('\n');
+          input.w = input.e;
+          wakeup(&input.r);
+        }
+        // برای تمام کاراکترهای دیگر
+        else {
+          // از ویرایشگر پیشرفته خودت استفاده کن
+          // (این بخش باید منطق write_character شما را داشته باشد)
+          // اگر متن انتخاب شده بود، پاکش کن
+          if (end_point != -1) {
             delete_selected_text();
           }
           write_character(c);
-        }
-        else
-        { // Handle newline
-          // Your existing newline logic is good
-          input.buf[input.e++ % INPUT_BUF] = c;
-          consputc(c);
-          input.w = input.e;
-          input.cursor = input.e;
-          wakeup(&input.r);
-          ins_tick = 0;
         }
       }
       break;
@@ -861,7 +850,6 @@ int consoleread(struct inode *ip, char *dst, int n)
   iunlock(ip);
   target = n;
   acquire(&cons.lock);
-  
   while (n > 0)
   {
     while (input.r == input.w)
@@ -894,7 +882,6 @@ int consoleread(struct inode *ip, char *dst, int n)
   ilock(ip);
 
   return target - n;
-
 }
 
 int consolewrite(struct inode *ip, char *buf, int n)
