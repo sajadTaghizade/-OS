@@ -209,7 +209,14 @@ struct
   uint w; // Write index
   uint e; // Edit index
   uint cursor;
+  uint r2;
+  uint w2;
 } input;
+
+int tab_flag = 0;
+int tab_flag2 = 0;
+int tab_flag3 = 0;
+int number_of_tab = 0;
 
 // #define C(x)  ((x)-'@')  // Control-x
 
@@ -376,73 +383,6 @@ write_character(char c)
 }
 // end of extra functions MH
 
-// #define MAX_MATCHES 32
-// static char last_prefix[INPUT_BUF];
-// static char matches[MAX_MATCHES][DIRSIZ];
-// static int match_count = 0;
-// static int last_cursor = -1;
-// #define MAX_COMMANDS 64
-// static char command_list[MAX_COMMANDS][DIRSIZ];
-// static int num_commands = 0;
-
-// static void
-// autocomplete_init(void)
-// {
-//   num_commands = 0;
-
-//   char *cmds[] = {
-//       "cat", "echo", "forktest", "grep", "kill", "ln", "ls", "mkdir",
-//       "rm", "sh", "stressfs", "usertests", "wc", "zombie", "zobie"
-//       // اگر برنامه جدیدی مثل find_sum اضافه کردید، نام آن را هم اینجا اضافه کنید
-//       // , "find_sum"
-//   };
-
-//   int num_cmds_to_load = sizeof(cmds) / sizeof(cmds[0]);
-
-//   for (int i = 0; i < num_cmds_to_load && i < MAX_COMMANDS; i++)
-//   {
-//     safestrcpy(command_list[num_commands], cmds[i], DIRSIZ);
-//     num_commands++;
-//   }
-// }
-
-// static void
-// find_matches(char *prefix)
-// {
-//   int prefix_len = strlen(prefix);
-//   match_count = 0;
-
-//   for (int i = 0; i < num_commands; i++)
-//   {
-//     if (strncmp(prefix, command_list[i], prefix_len) == 0)
-//     {
-//       if (match_count < MAX_MATCHES)
-//       {
-//         safestrcpy(matches[match_count], command_list[i], DIRSIZ);
-//         match_count++;
-//       }
-//     }
-//   }
-// }
-
-// static int
-// find_longest_common_prefix(void)
-// {
-//   if (match_count <= 0)
-//     return 0;
-
-//   int lcp_len = strlen(matches[0]);
-//   for (int i = 1; i < match_count; i++)
-//   {
-//     int j = 0;
-//     while (j < lcp_len && j < strlen(matches[i]) && matches[0][j] == matches[i][j])
-//     {
-//       j++;
-//     }
-//     lcp_len = j;
-//   }
-//   return lcp_len;
-// }
 
 static void
 remove_line()
@@ -463,85 +403,30 @@ remove_line()
   end_point = -1;
 }
 
-// static void
-// handle_autocomplete()
-// {
-//   // int current_pos = read_cursor_pos();
-//   // current_pos += input.e - input.cursor;
-//   // input.cursor = input.e;
-//   // write_cursor_pos(current_pos);
-//   char prefix[INPUT_BUF];
-//   int i = input.e;
-//   while (i > input.w)
-//   {
-//     i--;
-//   }
 
-//   int prefix_len = input.e - i;
-//   memmove(prefix, &input.buf[i % INPUT_BUF], prefix_len);
-//   prefix[prefix_len] = '\0';
-
-//   if ((strlen(prefix) == strlen(last_prefix)) && (strncmp(prefix, last_prefix, prefix_len) == 0) && (input.cursor == last_cursor))
-//   {
-//     if (match_count > 1)
-//     {
-//       // to handele  Unauthorized access to the memory BEGIN
-//       release(&cons.lock);
-
-//       cprintf("\n");
-//       for (int j = 0; j < match_count; j++)
-//       {
-//         cprintf("%s  ", matches[j]);
-//       }
-//       cprintf("\n");
-//       for (int k = input.w; k < input.e; k++)
-//         consputc(input.buf[k % INPUT_BUF]);
-//       // to handele  Unauthorized access to the memory END
-//       acquire(&cons.lock);
-//     }
-//     return;
-//   }
-
-//   find_matches(prefix);
-
-//   if (match_count == 1)
-//   {
-//     remove_line();
-//     int len = strlen(matches[0]);
-//     for (int j = 0; j < len; j++)
-//       write_character(matches[0][j]);
-//     write_character(' ');
-//   }
-//   else if (match_count > 1)
-//   {
-//     int lcp_len = find_longest_common_prefix();
-//     int remaining_len = lcp_len - prefix_len;
-
-//     if (remaining_len > 0)
-//     {
-//       for (int j = 0; j < remaining_len; j++)
-//         write_character(matches[0][prefix_len + j]);
-//     }
-
-//     safestrcpy(last_prefix, prefix, INPUT_BUF);
-//     last_cursor = input.cursor;
-//   }
-// }
-int tempW = -1;
 void consoleintr(int (*getc)(void))
 {
-  if(tempW == -1) {
-    tempW = input.w;
-  } 
-  
-  input.w = tempW;
-
-  int print_debug = 0;
   int c, doprocdump = 0;
 
   acquire(&cons.lock);
   while ((c = getc()) >= 0)
   {
+
+    if(tab_flag3 == 1) {
+      int temp = input.cursor;
+      input.cursor = input.e;
+      move_cursor(input.e - temp);
+      if(number_of_tab >= 2) {
+        backspace();
+      }
+      backspace();
+      tab_flag3 = 0;
+    }
+
+    tab_flag2 = 0;
+    tab_flag = 0;
+    input.r2 = 0;
+    input.w2 = 0;
     switch (c)
     {
     case C('P'): // Process listing.
@@ -550,6 +435,7 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('U'): // Kill line.
+      number_of_tab = 0;
       if (end_point != -1)
       {
         deselect(); // remove highlight from selected text MH
@@ -560,6 +446,9 @@ void consoleintr(int (*getc)(void))
       break;
     case C('H'):
     case '\x7f': // Backspace
+
+      number_of_tab = 0;
+
       if (end_point == -1)
       {
         backspace();
@@ -604,6 +493,9 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('D'):
+
+      number_of_tab = 0;
+
       if (end_point != -1)
       {
         deselect(); // remove highlight from selected text MH
@@ -637,6 +529,9 @@ void consoleintr(int (*getc)(void))
 
     case C('A'):
     {
+
+      number_of_tab = 0;
+
       if (end_point != -1)
       {
         deselect(); // remove highlight from selected text MH
@@ -726,6 +621,9 @@ void consoleintr(int (*getc)(void))
       break;
 
     case C('V'): // Paste text from copy_buffer
+
+      number_of_tab = 0;
+
       if (copy_buffer[0] != '\0')
       { // Check if there's anything to paste
         if (end_point != -1)
@@ -748,6 +646,9 @@ void consoleintr(int (*getc)(void))
 
     case C('Z'):
     {
+
+      number_of_tab = 0;
+
       if (end_point != -1)
       {
         deselect(); // remove highlight from selected text MH
@@ -776,32 +677,29 @@ void consoleintr(int (*getc)(void))
       break;
     }
 
-      // کد صحیح جدید در console.c
-      // کد صحیح و نهایی برای Tab در console.c
-
-      // case '\t':
-      //   // Tab نباید چاپ شود، اما باید مانند Enter، بافر را نهایی کند
-      //   // تا برای خواندن توسط شل آماده شود.
-
-      //   break;
-
-      // Inside consoleintr in console.c
     default:
     {
       if (c != 0 && (input.e - input.w) < INPUT_BUF)
       {
-        // Treat Tab as a special character that the shell needs to see immediately
         if (c == '\t')
         {
-          // Put the tab in the buffer so the shell can read it
+          tab_flag = 1;
+          tab_flag2 = 1;
+          tab_flag3 = 1;
+          number_of_tab++;
+
+          int temp = input.cursor;
+          input.cursor = input.e;
+          move_cursor(input.e - temp);
+
+          if(number_of_tab >= 2) {
+            input.buf[input.e++ % INPUT_BUF] = '\x1b';
+          }
           input.buf[input.e++ % INPUT_BUF] = c;
-          tempW = input.w;
+          input.w2 = input.e;
+          input.r2 = input.r;
 
-
-          input.w = input.e; // Make it available to read
-          wakeup(&input.r);  // Wake up the shell
-          // input.w = temp;
-
+          wakeup(&input.r);
 
         }
         else if (c != '\n')
@@ -829,24 +727,6 @@ void consoleintr(int (*getc)(void))
   }
   release(&cons.lock);
 
-  //  debug
-  if (print_debug)
-  {
-    cprintf("\nDEBUG\n");
-    cprintf("Buffer: [");
-    for (int i = input.w; i < input.e; i++)
-    {
-      cprintf("%c", input.buf[i % INPUT_BUF]);
-    }
-    cprintf("]\nStamps: [");
-    for (int i = input.w; i < input.e; i++)
-    {
-      cprintf("%d ", stamp[i % INPUT_BUF]);
-    }
-    cprintf("]\n");
-    cprintf("------------------------\n");
-  }
-
   if (doprocdump)
   {
     procdump();
@@ -864,7 +744,7 @@ int consoleread(struct inode *ip, char *dst, int n)
   
   while (n > 0)
   {
-    while (input.r == input.w)
+    while (input.r == input.w && tab_flag == 0)
     {
       if (myproc()->killed)
       {
@@ -872,43 +752,97 @@ int consoleread(struct inode *ip, char *dst, int n)
         ilock(ip);
         return -1;
       }
+      
       sleep(&input.r, &cons.lock);
     }
-    c = input.buf[input.r++ % INPUT_BUF];
-    if (c == C('D'))
-    { // EOF
-      if (n < target)
-      {
-        // Save ^D for next time, to make sure
-        // caller gets a 0-byte result.
-        input.r--;
+    if(tab_flag) {
+      c = input.buf[(input.r2)% INPUT_BUF];
+      if(input.r2 == input.w2) {
+        tab_flag = 0;
+        break;
       }
-      break;
+      input.r2++;
+
+      *dst++ = c;
+      --n;
+      if(c == '\t') {
+        input.buf[(input.r2 - 1) % INPUT_BUF] = '\0';
+        break;
+      }
+
+    } else {
+    
+      c = input.buf[input.r++ % INPUT_BUF];
+      
+      if (c == C('D'))
+      { // EOF
+        if (n < target)
+        {
+          // Save ^D for next time, to make sure
+          // caller gets a 0-byte result.
+          input.r--;
+        }
+        break;
+      }
+      *dst++ = c;
+      --n;
+      if (c == '\n')
+        break;
     }
-    *dst++ = c;
-    --n;
-    if (c == '\n')
-      break;
   }
   release(&cons.lock);
   ilock(ip);
 
   return target - n;
-
 }
+
+int stdout = 0;
 
 int consolewrite(struct inode *ip, char *buf, int n)
 {
-  int i;
+  if(tab_flag2 == 1 && tab_flag == 0) {
+    return 1;
+  } 
+  else if(tab_flag == 1 && tab_flag2 == 1) {
+    int i;
+    iunlock(ip);
+    acquire(&cons.lock);
+    for (i = 0; i < n; i++) {
+      if(buf[i] == 9 || buf[i] == 0) {
+        continue;
+      }
+      if(buf[i] == '\x01') {
+        stdout = 1 - stdout;
+        if(stdout == 0) {
+          input.r++;
+          input.w++;
+        }
+        continue;
+      }
+      if(stdout == 1) {
+        consputc(buf[i]  & 0xff);
+      }
+      else {
+        write_character(buf[i] & 0xff);
+      }
+    }
+    release(&cons.lock);
+    ilock(ip);
+    return n;
+  }
+  else {
 
-  iunlock(ip);
-  acquire(&cons.lock);
-  for (i = 0; i < n; i++)
-    consputc(buf[i] & 0xff);
-  release(&cons.lock);
-  ilock(ip);
+    int i;
+    iunlock(ip);
+    acquire(&cons.lock);
+    for (i = 0; i < n; i++) {
+      consputc(buf[i] & 0xff);  
+    }
+    release(&cons.lock);
+    ilock(ip);
+    return n;
+  }
 
-  return n;
 }
 
 void consoleinit(void)
