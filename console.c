@@ -383,7 +383,6 @@ write_character(char c)
 }
 // end of extra functions MH
 
-
 static void
 remove_line()
 {
@@ -403,7 +402,6 @@ remove_line()
   end_point = -1;
 }
 
-
 void consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
@@ -412,11 +410,13 @@ void consoleintr(int (*getc)(void))
   while ((c = getc()) >= 0)
   {
 
-    if(tab_flag3 == 1) {
+    if (tab_flag3 == 1)
+    {
       int temp = input.cursor;
       input.cursor = input.e;
       move_cursor(input.e - temp);
-      if(number_of_tab >= 2) {
+      if (number_of_tab >= 2)
+      {
         backspace();
       }
       backspace();
@@ -524,7 +524,6 @@ void consoleintr(int (*getc)(void))
 
           move_cursor(steps);
         }
-
       }
 
       break;
@@ -694,7 +693,8 @@ void consoleintr(int (*getc)(void))
           input.cursor = input.e;
           move_cursor(input.e - temp);
 
-          if(number_of_tab >= 2) {
+          if (number_of_tab >= 2)
+          {
             input.buf[input.e++ % INPUT_BUF] = '\x1b';
           }
           input.buf[input.e++ % INPUT_BUF] = c;
@@ -702,7 +702,6 @@ void consoleintr(int (*getc)(void))
           input.r2 = input.r;
 
           wakeup(&input.r);
-
         }
         else if (c != '\n')
         { // Handle normal characters
@@ -755,12 +754,14 @@ int consoleread(struct inode *ip, char *dst, int n)
         ilock(ip);
         return -1;
       }
-      
+
       sleep(&input.r, &cons.lock);
     }
-    if(tab_flag) {
-      c = input.buf[(input.r2)% INPUT_BUF];
-      if(input.r2 == input.w2) {
+    if (tab_flag)
+    {
+      c = input.buf[(input.r2) % INPUT_BUF];
+      if (input.r2 == input.w2)
+      {
         tab_flag = 0;
         break;
       }
@@ -768,15 +769,17 @@ int consoleread(struct inode *ip, char *dst, int n)
 
       *dst++ = c;
       --n;
-      if(c == '\t') {
+      if (c == '\t')
+      {
         input.buf[(input.r2 - 1) % INPUT_BUF] = '\0';
         break;
       }
+    }
+    else
+    {
 
-    } else {
-    
       c = input.buf[input.r++ % INPUT_BUF];
-      
+
       if (c == C('D'))
       { // EOF
         if (n < target)
@@ -803,29 +806,37 @@ int stdout = 0;
 
 int consolewrite(struct inode *ip, char *buf, int n)
 {
-  if(tab_flag2 == 1 && tab_flag == 0) {
+  if (tab_flag2 == 1 && tab_flag == 0)
+  {
     return 1;
-  } 
-  else if(tab_flag == 1 && tab_flag2 == 1) {
+  }
+  else if (tab_flag == 1 && tab_flag2 == 1)
+  {
     int i;
     iunlock(ip);
     acquire(&cons.lock);
-    for (i = 0; i < n; i++) {
-      if(buf[i] == 9 || buf[i] == 0) {
+    for (i = 0; i < n; i++)
+    {
+      if (buf[i] == 9 || buf[i] == 0)
+      {
         continue;
       }
-      if(buf[i] == '\x01') {
+      if (buf[i] == '\x01')
+      {
         stdout = 1 - stdout;
-        if(stdout == 0) {
+        if (stdout == 0)
+        {
           input.r++;
           input.w++;
         }
         continue;
       }
-      if(stdout == 1) {
-        consputc(buf[i]  & 0xff);
+      if (stdout == 1)
+      {
+        consputc(buf[i] & 0xff);
       }
-      else {
+      else
+      {
         write_character(buf[i] & 0xff);
       }
     }
@@ -833,19 +844,20 @@ int consolewrite(struct inode *ip, char *buf, int n)
     ilock(ip);
     return n;
   }
-  else {
+  else
+  {
 
     int i;
     iunlock(ip);
     acquire(&cons.lock);
-    for (i = 0; i < n; i++) {
-      consputc(buf[i] & 0xff);  
+    for (i = 0; i < n; i++)
+    {
+      consputc(buf[i] & 0xff);
     }
     release(&cons.lock);
     ilock(ip);
     return n;
   }
-
 }
 
 void consoleinit(void)
