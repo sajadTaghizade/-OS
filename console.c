@@ -710,6 +710,16 @@ void consoleintr(int (*getc)(void))
           }
           write_character(c);
         }
+        else
+        { // Handle newline
+          // Your existing newline logic is good
+          input.buf[input.e++ % INPUT_BUF] = c;
+          consputc(c);
+          input.w = input.e;
+          input.cursor = input.e;
+          wakeup(&input.r);
+          ins_tick = 0;
+        }
       }
       break;
     }
