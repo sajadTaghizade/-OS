@@ -383,7 +383,7 @@ main(void)
       if(result.match_count == 1) {
         // printf(1, "%s", buf);
         printf(1, "%s", result.single_match + strlen(buf) - 1);
-      } else if(result.match_count > 1) {
+      } else if(result.match_count > 1 && strlen(buf) > 2) {
         if(buf[strlen(buf) - 2] == '\x1b') {
           int len = strlen(buf);
           buf[len - 2] = '\0';

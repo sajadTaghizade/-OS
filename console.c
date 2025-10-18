@@ -526,10 +526,7 @@ void consoleintr(int (*getc)(void))
         }
 
       }
-      printint(input.r, 10, 1);
-      printint(input.w, 10, 1);
-      printint(input.e, 10, 1);
-      printint(input.cursor, 10, 1);
+
       break;
 
     case C('A'):
