@@ -524,7 +524,12 @@ void consoleintr(int (*getc)(void))
 
           move_cursor(steps);
         }
+
       }
+      printint(input.r, 10, 1);
+      printint(input.w, 10, 1);
+      printint(input.e, 10, 1);
+      printint(input.cursor, 10, 1);
       break;
 
     case C('A'):
@@ -708,11 +713,13 @@ void consoleintr(int (*getc)(void))
           {
             delete_selected_text();
           }
+          number_of_tab = 0;
           write_character(c);
         }
         else
         { // Handle newline
           // Your existing newline logic is good
+          number_of_tab = 0;
           input.buf[input.e++ % INPUT_BUF] = c;
           consputc(c);
           input.w = input.e;

@@ -381,6 +381,7 @@ main(void)
       result = find_command_matches(buf, (const char**)commands, command_count);
 
       if(result.match_count == 1) {
+        // printf(1, "%s", buf);
         printf(1, "%s", result.single_match + strlen(buf) - 1);
       } else if(result.match_count > 1) {
         if(buf[strlen(buf) - 2] == '\x1b') {
