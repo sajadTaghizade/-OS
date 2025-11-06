@@ -23,6 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int make_duplicate(const char*);
 
 // ulib.c
 int stat(const char*, struct stat*);
