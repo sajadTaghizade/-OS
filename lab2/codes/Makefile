@@ -182,6 +182,7 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_find_sum\
+	_getpidtest\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
