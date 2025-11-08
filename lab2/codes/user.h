@@ -43,3 +43,5 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+int grep(char *filename, char *keyword, char *buf, int bufsize);
+

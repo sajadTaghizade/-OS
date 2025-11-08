@@ -505,6 +505,18 @@ int sys_make_duplicate(void)
   return 0;
 }
 
+static char*
+strstr(const char *haystack, const char *needle) {
+  if (!*needle) return (char*)haystack;
+  for (const char *p = haystack; *p; p++) {
+    const char *h = p, *n = needle;
+    while (*h && *n && *h == *n) {
+      h++; n++;
+    }
+    if (!*n) return (char*)p; 
+  }
+  return 0;
+}
 
 int
 sys_grep(void)
