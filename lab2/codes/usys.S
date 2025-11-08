@@ -30,3 +30,13 @@ SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(make_duplicate)
+
+.globl simplearith
+simplearith:
+    pushl %ebx
+    movl 8(%esp), %ebx
+    movl 12(%esp), %ecx
+    movl $SYS_simplearith, %eax
+    int $T_SYSCALL
+    popl %ebx
+    ret
