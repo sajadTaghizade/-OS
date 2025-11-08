@@ -34,3 +34,12 @@ SYSCALL(make_duplicate)
 
 
 SYSCALL(set_priority_syscall)
+.globl simple_arithmetic_syscall
+simple_arithmetic_syscall:
+    pushl %ebx
+    movl 8(%esp), %ebx
+    movl 12(%esp), %ecx
+    movl $SYS_simplearith, %eax
+    int $T_SYSCALL
+    popl %ebx
+    ret

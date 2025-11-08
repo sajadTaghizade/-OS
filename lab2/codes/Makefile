@@ -185,6 +185,7 @@ UPROGS=\
 	_getpidtest\
 	_duplicatetest\
 	_priority_test\
+	_test_simplearith\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -259,6 +260,8 @@ EXTRA=\
 	.gdbinit.tmpl gdbutil\
 	_duplicatetest\
 	_priority_test\
+	_test_simplearith\
+
 
 dist:
 	rm -rf dist

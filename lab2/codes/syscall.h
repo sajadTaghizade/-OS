@@ -25,3 +25,4 @@
 
 
 #define SYS_set_priority_syscall 25
+#define SYS_simplearith 23

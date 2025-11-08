@@ -24,6 +24,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int make_duplicate(const char*);
+int simple_arithmetic_syscall(int a, int b);
+
 
 
 int set_priority_syscall(int pid, int priority); 

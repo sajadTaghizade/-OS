@@ -91,3 +91,17 @@ sys_uptime(void)
   return xticks;
 }
 
+int
+sys_simplearith(void)
+{
+  struct proc *p = myproc();
+
+  int a = p->tf->ebx;
+  int b = p->tf->ecx;
+
+  int result = (a + b) * (a - b);
+
+  cprintf("Calc: (%d+%d)*(%d-%d) = %d\n", a, b, a, b, result);
+
+  return result;
+}
