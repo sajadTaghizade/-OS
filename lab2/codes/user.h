@@ -24,6 +24,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int make_duplicate(const char*);
+int simple_arith(int a, int b);
+
 
 // ulib.c
 int stat(const char*, struct stat*);
