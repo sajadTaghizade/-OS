@@ -15,6 +15,7 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+#include "memlayout.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -502,4 +503,79 @@ int sys_make_duplicate(void)
 
   cprintf("make_duplicate: Success(in sysytem call)\n");
   return 0;
+}
+
+
+int
+sys_grep(void)
+{
+  char *filename, *keyword, *ubuf;
+  int bufsize;
+
+  if (argstr(0, &filename) < 0) return -1;
+  if (argstr(1, &keyword)  < 0) return -1;
+  if (argptr(2, &ubuf, 0)  < 0) return -1;
+  if (argint(3, &bufsize)  < 0) return -1;
+
+  struct inode *ip;
+  struct buf *bp;
+  char *kbuf;
+  int found = 0, len = 0;
+
+  begin_op();
+  if ((ip = namei(filename)) == 0) {
+    end_op();
+    return -1; 
+  }
+
+  ilock(ip);
+
+  kbuf = kalloc();
+  if (!kbuf) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
+  int off = 0;
+  int n;
+  int total = ip->size;
+
+  int match(const char *line, const char *key) {
+    for (int i = 0; line[i] && key[i]; i++) {
+      if (line[i] != key[i]) return 0;
+    }
+    return (key[0] != 0); 
+  }
+
+  while (off < total) {
+    n = readi(ip, (char*)kbuf, off, BSIZE);
+    if (n <= 0) break;
+
+    int start = 0;
+    for (int i = 0; i < n; i++) {
+      if (kbuf[i] == '\n' || i == n-1) {
+        kbuf[i] = 0;  
+
+        if (strstr(kbuf + start, keyword)) {
+          found = 1;
+          len = strlen(kbuf + start);
+          if (len > bufsize - 1)
+            len = bufsize - 1;
+          copyout(myproc()->pagetable, (uint64)ubuf, kbuf + start, len);
+          copyout(myproc()->pagetable, (uint64)(ubuf + len), "\0", 1);
+          goto done;
+        }
+        start = i + 1;
+      }
+    }
+
+    off += n;
+  }
+
+done:
+  kfree(kbuf);
+  iunlockput(ip);
+  end_op();
+  return found ? len : -1;
 }
