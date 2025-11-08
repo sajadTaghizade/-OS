@@ -105,6 +105,10 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_make_duplicate(void);
 
+
+
+extern int sys_set_priority_syscall(void);
+
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -128,6 +132,9 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_make_duplicate] sys_make_duplicate,
+
+
+[SYS_set_priority_syscall] sys_set_priority_syscall,
 };
 
 void

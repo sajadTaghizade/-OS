@@ -30,3 +30,7 @@ SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(make_duplicate)
+
+
+
+SYSCALL(set_priority_syscall)

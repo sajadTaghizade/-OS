@@ -25,6 +25,9 @@ int sleep(int);
 int uptime(void);
 int make_duplicate(const char*);
 
+
+int set_priority_syscall(int pid, int priority); 
+
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

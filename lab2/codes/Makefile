@@ -184,6 +184,7 @@ UPROGS=\
 	_find_sum\
 	_getpidtest\
 	_duplicatetest\
+	_priority_test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -257,6 +258,7 @@ EXTRA=\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 	_duplicatetest\
+	_priority_test\
 
 dist:
 	rm -rf dist
