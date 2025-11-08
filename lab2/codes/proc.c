@@ -532,3 +532,66 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int
+show_process_family(int pid)
+{
+  struct proc *p;
+  struct proc *target_proc = 0;
+  struct proc *parent_proc = 0;
+  int parent_pid = -1;
+  int found_children = 0;
+  int found_siblings = 0;
+
+  acquire(&ptable.lock);
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->pid == pid && p->state != UNUSED) {
+      target_proc = p;
+      if(p->parent) {
+        parent_proc = p->parent;
+        parent_pid = p->parent->pid;
+      }
+      break;
+    }
+  }
+
+  if(target_proc == 0) {
+    release(&ptable.lock);
+    cprintf("PID is not valid\n");
+    return -1;
+  }
+
+  if(target_proc->pid == 1) {
+     cprintf("My id: %d, My parent id: %d (This is the init process)\n", target_proc->pid, target_proc->pid);
+  } else {
+     cprintf("My id: %d, My parent id: %d\n", target_proc->pid, parent_pid);
+  }
+
+  cprintf("Children of process %d:\n", pid);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->parent == target_proc && p->state != UNUSED) {
+      cprintf("Child pid: %d\n", p->pid);
+      found_children = 1;
+    }
+  }
+  if(!found_children) {
+    cprintf("(No children found)\n");
+  }
+
+  cprintf("Siblings of process %d:\n", pid);
+  if(parent_proc) {
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      if(p->parent == parent_proc && p->pid != pid && p->state != UNUSED) {
+        cprintf("Sibling pid: %d\n", p->pid);
+        found_siblings = 1;
+      }
+    }
+  }
+  if(!found_siblings) {
+     cprintf("(No siblings found)\n");
+  }
+
+  release(&ptable.lock);
+  return 0;
+}

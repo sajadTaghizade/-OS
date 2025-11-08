@@ -21,3 +21,4 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_make_duplicate 22
+#define SYS_show_process_family 24

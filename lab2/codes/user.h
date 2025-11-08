@@ -1,3 +1,4 @@
+#include "types.h"
 struct stat;
 struct rtcdate;
 
@@ -24,6 +25,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int make_duplicate(const char*);
+int show_process_family(int);
 
 // ulib.c
 int stat(const char*, struct stat*);

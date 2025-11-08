@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_show_process_family(void)
+{
+  int pid;
+
+  if(argint(0, &pid) < 0) {
+    return -1;
+  }
+
+  return show_process_family(pid);
+}

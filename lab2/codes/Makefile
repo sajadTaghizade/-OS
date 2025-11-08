@@ -184,6 +184,7 @@ UPROGS=\
 	_find_sum\
 	_getpidtest\
 	_duplicatetest\
+	_testfamily\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
