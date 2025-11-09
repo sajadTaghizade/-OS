@@ -89,6 +89,12 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
+
+
+  p->priority = 1;
+
+
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -319,6 +325,10 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+// void
+
+
+
 void
 scheduler(void)
 {
@@ -327,31 +337,41 @@ scheduler(void)
   c->proc = 0;
   
   for(;;){
-    // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
+    struct proc *best_p = 0; 
+    int current_priority;
+
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+    for(current_priority = 0; current_priority <= 2; current_priority++){
+      
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE || p->priority != current_priority)
+          continue;
+        
+        best_p = p;
+        goto run_process;
+      }
     }
     release(&ptable.lock);
+    continue; 
 
+run_process:
+    p = best_p;
+    
+    // Switch to chosen process.
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+
+    // Process is done running for now.
+    c->proc = 0;
+    
+    release(&ptable.lock);
+    
   }
 }
 
@@ -594,4 +614,30 @@ show_process_family(int pid)
 
   release(&ptable.lock);
   return 0;
+}
+
+
+
+int
+sys_set_priority_syscall(void)
+{
+  int pid, priority;
+  struct proc *p;
+
+  if(argint(0, &pid) < 0 || argint(1, &priority) < 0)
+    return -1;
+
+  
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+      p->priority = priority;
+      release(&ptable.lock);
+      return 0;
+    }
+  }
+  release(&ptable.lock);
+
+  cprintf("set_priority: PID %d not found\n", pid);
+  return -1; 
 }

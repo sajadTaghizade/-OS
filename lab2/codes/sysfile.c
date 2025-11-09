@@ -15,6 +15,7 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+#include "memlayout.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -502,4 +503,108 @@ int sys_make_duplicate(void)
 
   cprintf("make_duplicate: Success(in sysytem call)\n");
   return 0;
+}
+
+static int
+contains_substring(const char *haystack, const char *needle)
+{
+  if (*needle == 0)
+    return 1;
+  for (; *haystack; haystack++)
+  {
+    const char *h = haystack;
+    const char *n = needle;
+    while (*h && *n && *h == *n)
+    {
+      h++;
+      n++;
+    }
+    if (*n == 0)
+      return 1;
+  }
+  return 0;
+}
+
+int sys_grep_syscall(void)
+{
+  char *keyword, *filename, *ubuf;
+  int bufsize;
+  struct inode *ip;
+  char *kbuf;
+  int found = 0;
+  int len = 0;
+  struct proc *proc = myproc();
+  argstr(0, &keyword);
+  argstr(1, &filename);
+  argint(2, (int *)&ubuf);
+  argint(3, &bufsize);
+
+  kbuf = kalloc();
+  if (kbuf == 0)
+  {
+    return -1;
+  }
+
+  begin_op();
+  if ((ip = namei(filename)) == 0)
+  {
+    end_op();
+    kfree(kbuf);
+    return -1;
+  }
+  ilock(ip);
+  end_op();
+
+  int off = 0;
+  int n;
+  int line_start = 0;
+  int total_size = ip->size;
+
+  while (off < total_size && !found)
+  {
+    n = readi(ip, kbuf, off, BSIZE);
+    if (n <= 0)
+      break;
+
+    line_start = 0;
+    for (int i = 0; i < n; i++)
+    {
+      if (kbuf[i] == '\n' || (off + i == total_size - 1))
+      {
+
+        char original_char = kbuf[i];
+        if (kbuf[i] == '\n')
+          kbuf[i] = 0;
+        else
+          kbuf[i + 1] = 0;
+
+        if (contains_substring(kbuf + line_start, keyword))
+        {
+          found = 1;
+          len = strlen(kbuf + line_start);
+
+          if (len > bufsize - 1)
+            len = bufsize - 1;
+
+          copyout(proc->pgdir, (uint)ubuf, kbuf + line_start, len);
+          copyout(proc->pgdir, (uint)ubuf + len, "\0", 1);
+
+          break;
+        }
+
+        kbuf[i] = original_char;
+        line_start = i + 1;
+      }
+    }
+
+    if (found)
+      break;
+
+    off += n;
+  }
+
+  kfree(kbuf);
+  iunlockput(ip);
+
+  return found ? len : -1;
 }
