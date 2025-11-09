@@ -186,6 +186,7 @@ UPROGS=\
 	_duplicatetest\
 	_priority_test\
 	_test_simplearith\
+	_grep_test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -261,6 +262,7 @@ EXTRA=\
 	_duplicatetest\
 	_priority_test\
 	_test_simplearith\
+	_grep_test\
 
 
 dist:

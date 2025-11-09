@@ -505,89 +505,106 @@ int sys_make_duplicate(void)
   return 0;
 }
 
-static char*
-strstr(const char *haystack, const char *needle) {
-  if (!*needle) return (char*)haystack;
-  for (const char *p = haystack; *p; p++) {
-    const char *h = p, *n = needle;
-    while (*h && *n && *h == *n) {
-      h++; n++;
+static int
+contains_substring(const char *haystack, const char *needle)
+{
+  if (*needle == 0)
+    return 1;
+  for (; *haystack; haystack++)
+  {
+    const char *h = haystack;
+    const char *n = needle;
+    while (*h && *n && *h == *n)
+    {
+      h++;
+      n++;
     }
-    if (!*n) return (char*)p; 
+    if (*n == 0)
+      return 1;
   }
   return 0;
 }
 
-int
-sys_grep(void)
+int sys_grep_syscall(void)
 {
-  char *filename, *keyword, *ubuf;
+  char *keyword, *filename, *ubuf;
   int bufsize;
-
-  if (argstr(0, &filename) < 0) return -1;
-  if (argstr(1, &keyword)  < 0) return -1;
-  if (argptr(2, &ubuf, 0)  < 0) return -1;
-  if (argint(3, &bufsize)  < 0) return -1;
-
   struct inode *ip;
-  struct buf *bp;
   char *kbuf;
-  int found = 0, len = 0;
-
-  begin_op();
-  if ((ip = namei(filename)) == 0) {
-    end_op();
-    return -1; 
-  }
-
-  ilock(ip);
+  int found = 0;
+  int len = 0;
+  struct proc *proc = myproc();
+  argstr(0, &keyword);
+  argstr(1, &filename);
+  argint(2, (int *)&ubuf);
+  argint(3, &bufsize);
 
   kbuf = kalloc();
-  if (!kbuf) {
-    iunlockput(ip);
-    end_op();
+  if (kbuf == 0)
+  {
     return -1;
   }
 
+  begin_op();
+  if ((ip = namei(filename)) == 0)
+  {
+    end_op();
+    kfree(kbuf);
+    return -1;
+  }
+  ilock(ip);
+  end_op();
+
   int off = 0;
   int n;
-  int total = ip->size;
+  int line_start = 0;
+  int total_size = ip->size;
 
-  int match(const char *line, const char *key) {
-    for (int i = 0; line[i] && key[i]; i++) {
-      if (line[i] != key[i]) return 0;
-    }
-    return (key[0] != 0); 
-  }
+  while (off < total_size && !found)
+  {
+    n = readi(ip, kbuf, off, BSIZE);
+    if (n <= 0)
+      break;
 
-  while (off < total) {
-    n = readi(ip, (char*)kbuf, off, BSIZE);
-    if (n <= 0) break;
+    line_start = 0;
+    for (int i = 0; i < n; i++)
+    {
+      if (kbuf[i] == '\n' || (off + i == total_size - 1))
+      {
 
-    int start = 0;
-    for (int i = 0; i < n; i++) {
-      if (kbuf[i] == '\n' || i == n-1) {
-        kbuf[i] = 0;  
+        char original_char = kbuf[i];
+        if (kbuf[i] == '\n')
+          kbuf[i] = 0;
+        else
+          kbuf[i + 1] = 0;
 
-        if (strstr(kbuf + start, keyword)) {
+        if (contains_substring(kbuf + line_start, keyword))
+        {
           found = 1;
-          len = strlen(kbuf + start);
+          len = strlen(kbuf + line_start);
+
           if (len > bufsize - 1)
             len = bufsize - 1;
-          copyout(myproc()->pagetable, (uint64)ubuf, kbuf + start, len);
-          copyout(myproc()->pagetable, (uint64)(ubuf + len), "\0", 1);
-          goto done;
+
+          copyout(proc->pgdir, (uint)ubuf, kbuf + line_start, len);
+          copyout(proc->pgdir, (uint)ubuf + len, "\0", 1);
+
+          break;
         }
-        start = i + 1;
+
+        kbuf[i] = original_char;
+        line_start = i + 1;
       }
     }
+
+    if (found)
+      break;
 
     off += n;
   }
 
-done:
   kfree(kbuf);
   iunlockput(ip);
-  end_op();
+
   return found ? len : -1;
 }

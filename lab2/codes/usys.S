@@ -30,7 +30,7 @@ SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(make_duplicate)
-SYSCALL(grep)
+SYSCALL(grep_syscall)
 
 
 

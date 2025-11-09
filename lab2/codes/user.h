@@ -26,7 +26,7 @@ int uptime(void);
 int make_duplicate(const char*);
 int simple_arithmetic_syscall(int a, int b);
 
-
+int grep_syscall(const char* keyword, const char* filename, char* user_buffer, int buffer_size);
 
 int set_priority_syscall(int pid, int priority); 
 
@@ -43,5 +43,4 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
-int grep(char *filename, char *keyword, char *buf, int bufsize);
 

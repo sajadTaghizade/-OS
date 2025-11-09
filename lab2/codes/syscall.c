@@ -105,8 +105,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_make_duplicate(void);
 extern int sys_simplearith(void);
-extern int sys_grep(void);
-
+extern int sys_grep_syscall(void);
 
 
 
@@ -139,7 +138,7 @@ static int (*syscalls[])(void) = {
 
 [SYS_set_priority_syscall] sys_set_priority_syscall,
 [SYS_simplearith] sys_simplearith,
-[SYS_grep] sys_grep,
+[SYS_grep_syscall]   sys_grep_syscall,
 };
 
 void
