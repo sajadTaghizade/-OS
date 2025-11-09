@@ -107,21 +107,6 @@ sys_simplearith(void)
 }
 
 int
-sys_simplearith(void)
-{
-  struct proc *p = myproc();
-
-  int a = p->tf->ebx;
-  int b = p->tf->ecx;
-
-  int result = (a + b) * (a - b);
-
-  cprintf("Calc: (%d+%d)*(%d-%d) = %d\n", a, b, a, b, result);
-
-  return result;
-}
-
-int
 sys_show_process_family(void)
 {
   int pid;

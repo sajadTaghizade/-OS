@@ -617,7 +617,6 @@ show_process_family(int pid)
 }
 
 
-
 int
 sys_set_priority_syscall(void)
 {
