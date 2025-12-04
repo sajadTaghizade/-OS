@@ -188,6 +188,8 @@ UPROGS=\
 	_priority_test\
 	_test_simplearith\
 	_grep_test\
+	_rrtest\
+	_queuetest\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

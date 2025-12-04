@@ -8,6 +8,7 @@ struct cpu {
   int ncli;                    // Depth of pushcli nesting.
   int intena;                  // Were interrupts enabled before pushcli?
   struct proc *proc;           // The process running on this cpu or null
+  struct proc *runq;           
 };
 
 extern struct cpu cpus[NCPU];
@@ -52,7 +53,8 @@ struct proc {
 
 
   int priority;
-  
+  int ticks_consumed;          // Ticks consumed in current quantum
+  struct proc *next;           // Next process in run queue
 };
 
 // Process memory is laid out contiguously, low addresses first:

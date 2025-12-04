@@ -21,6 +21,34 @@ extern void trapret(void);
 static void wakeup1(void *chan);
 
 void
+push_back(struct cpu *c, struct proc *p)
+{
+  if(p->state != RUNNABLE)
+    panic("push_back: process not runnable");
+  
+  p->next = 0;
+  if(c->runq == 0){
+    c->runq = p;
+  } else {
+    struct proc *curr = c->runq;
+    while(curr->next != 0)
+      curr = curr->next;
+    curr->next = p;
+  }
+}
+
+struct proc*
+pop_front(struct cpu *c)
+{
+  struct proc *p = c->runq;
+  if(p){
+    c->runq = p->next;
+    p->next = 0;
+  }
+  return p;
+}
+
+void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
@@ -92,6 +120,7 @@ found:
 
 
   p->priority = 1;
+  p->ticks_consumed = 0;
 
 
 
@@ -155,6 +184,9 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  
+  int cpu_idx = p->pid % ncpu;
+  push_back(&cpus[cpu_idx], p);
 
   release(&ptable.lock);
 }
@@ -221,6 +253,10 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  
+  // Assign to a CPU (Round Robin)
+  int cpu_idx = np->pid % ncpu;
+  push_back(&cpus[cpu_idx], np);
 
   release(&ptable.lock);
 
@@ -339,39 +375,30 @@ scheduler(void)
   for(;;){
     sti();
 
-    struct proc *best_p = 0; 
-    int current_priority;
-
     acquire(&ptable.lock);
-    for(current_priority = 0; current_priority <= 2; current_priority++){
-      
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE || p->priority != current_priority)
-          continue;
-        
-        best_p = p;
-        goto run_process;
-      }
+    
+    p = pop_front(c);
+    
+    if(p != 0){
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      p->ticks_consumed = 0;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have been added back to a runq (via yield/sleep) if still runnable
+      c->proc = 0;
     }
-    release(&ptable.lock);
-    continue; 
-
-run_process:
-    p = best_p;
-    
-    // Switch to chosen process.
-    c->proc = p;
-    switchuvm(p);
-    p->state = RUNNING;
-
-    swtch(&(c->scheduler), p->context);
-    switchkvm();
-
-    // Process is done running for now.
-    c->proc = 0;
     
     release(&ptable.lock);
-    
+
+    if(p == 0){
+      sti();
+      hlt();
+    }
   }
 }
 
@@ -407,6 +434,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  push_back(mycpu(), myproc());
   sched();
   release(&ptable.lock);
 }
@@ -480,8 +508,14 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan) {
       p->state = RUNNABLE;
+      // Assign to current CPU or original CPU? 
+      // Simple strategy: push to current CPU's queue or re-balance
+      // For now, push to the CPU determined by PID to keep it simple/consistent
+      int cpu_idx = p->pid % ncpu;
+      push_back(&cpus[cpu_idx], p);
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -506,8 +540,11 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING) {
         p->state = RUNNABLE;
+        int cpu_idx = p->pid % ncpu;
+        push_back(&cpus[cpu_idx], p);
+      }
       release(&ptable.lock);
       return 0;
     }
