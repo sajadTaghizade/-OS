@@ -186,6 +186,7 @@ void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 int             show_process_family(int);
+void            balance_load(void);
 
 // void            autocomplete_init(void);
 

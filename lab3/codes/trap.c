@@ -108,7 +108,10 @@ void trap(struct trapframe *tf)
   {
 
     myproc()->ticks_consumed++;
-
+    if (cpuid() % 2 == 0 && ticks % 5 == 0)
+    {
+      balance_load();
+    }
     if (cpuid() % 2 != 0)
     {
       // cprintf("CPU %d (Odd): PID %d running (ticks %d)\n", cpuid(), myproc()->pid, myproc()->ticks_consumed);

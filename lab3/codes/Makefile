@@ -191,7 +191,9 @@ UPROGS=\
 	_rrtest\
 	_queuetest\
 	_fcfstest\
-	_rrtest_quantum\
+	_balancetest\
+
+	
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

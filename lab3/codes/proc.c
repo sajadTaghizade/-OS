@@ -53,6 +53,104 @@ pop_front(struct cpu *c)
   return p;
 }
 
+int cpu_get_load(struct cpu *c)
+{
+  int count = 0;
+  struct proc *p = c->runq;
+  while (p)
+  {
+    count++;
+    p = p->next;
+  }
+  return count;
+}
+
+int is_movable(struct proc *p)
+{
+  if (p->pid == 1)
+    return 0;
+  if (p->pid == 2)
+    return 0;
+
+  if (p->name[0] == 's' && p->name[1] == 'h' && p->name[2] == 0)
+    return 0;
+
+  return 1;
+}
+
+void balance_load(void)
+{
+  struct cpu *c = mycpu();
+
+  if (cpuid() % 2 != 0)
+    return;
+
+  acquire(&ptable.lock);
+
+  int my_load = cpu_get_load(c);
+
+  int min_load = 1000000;
+  struct cpu *target_cpu = 0;
+  int i;
+
+  for (i = 0; i < ncpu; i++)
+  {
+    if (i % 2 != 0)
+    {
+      int load = cpu_get_load(&cpus[i]);
+      if (load < min_load)
+      {
+        min_load = load;
+        target_cpu = &cpus[i];
+      }
+    }
+  }
+
+  if (target_cpu == 0)
+  {
+    release(&ptable.lock);
+    return;
+  }
+
+  if (my_load >= min_load + 3)
+  {
+    struct proc *prev = 0;
+    struct proc *curr = c->runq;
+    struct proc *victim = 0;
+
+    while (curr)
+    {
+      if (is_movable(curr))
+      {
+        victim = curr;
+        break;
+      }
+      prev = curr;
+      curr = curr->next;
+    }
+
+    if (victim)
+    {
+      if (prev == 0)
+      {
+        c->runq = victim->next;
+      }
+      else
+      {
+        prev->next = victim->next;
+      }
+      victim->next = 0;
+
+      push_back(target_cpu, victim);
+
+      cprintf("LoadBalance: Moved PID %d from CPU %d (load %d) to CPU %d (load %d)\n",
+              victim->pid, cpuid(), my_load, target_cpu - cpus, min_load);
+    }
+  }
+
+  release(&ptable.lock);
+}
+
 void pinit(void)
 {
   initlock(&ptable.lock, "ptable");
@@ -188,9 +286,25 @@ void userinit(void)
 
   p->state = RUNNABLE;
 
-  int cpu_idx = p->pid % ncpu;
-  cprintf("userinit: ncpu=%d, pid=%d, assigned to CPU %d\n", ncpu, p->pid, cpu_idx);
-  push_back(&cpus[cpu_idx], p);
+  int min_load = 1000000;
+  struct cpu *best_cpu = &cpus[0];
+  int i;
+
+  for (i = 0; i < ncpu; i++)
+  {
+    if (i % 2 == 0)
+    {
+      int load = cpu_get_load(&cpus[i]);
+      if (load < min_load)
+      {
+        min_load = load;
+        best_cpu = &cpus[i];
+      }
+    }
+  }
+
+  cprintf("userinit: PID %d assigned to E-core %d (Load: %d)\n", p->pid, best_cpu - cpus, min_load);
+  push_back(best_cpu, p);
 
   release(&ptable.lock);
 }
@@ -261,11 +375,25 @@ int fork(void)
 
   np->state = RUNNABLE;
 
-  int cpu_idx;
+  int min_load = 1000000;
+  struct cpu *best_cpu = &cpus[0];
+  // int i;
 
-  cpu_idx = np->pid % ncpu;
+  for (i = 0; i < ncpu; i++)
+  {
+    if (i % 2 == 0)
+    { 
+      int load = cpu_get_load(&cpus[i]);
+      if (load < min_load)
+      {
+        min_load = load;
+        best_cpu = &cpus[i];
+      }
+    }
+  }
 
-  push_back(&cpus[cpu_idx], np);
+  cprintf("fork: PID %d assigned to E-core %d (Load: %d)\n", np->pid, best_cpu-cpus, min_load);
+  push_back(best_cpu, np);
 
   release(&ptable.lock);
 
