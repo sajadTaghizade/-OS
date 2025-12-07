@@ -9,6 +9,7 @@ struct cpu {
   int intena;                  // Were interrupts enabled before pushcli?
   struct proc *proc;           // The process running on this cpu or null
   struct proc *runq;           
+  int core_type;
 };
 
 extern struct cpu cpus[NCPU];
@@ -54,6 +55,7 @@ struct proc {
 
   int priority;
   int ticks_consumed;          // Ticks consumed in current quantum
+  uint ctime;                  // Creation time
   struct proc *next;           // Next process in run queue
 };
 

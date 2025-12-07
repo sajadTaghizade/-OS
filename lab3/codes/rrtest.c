@@ -2,32 +2,42 @@
 #include "stat.h"
 #include "user.h"
 
-void spin(int iterations) {
-  volatile int i;
-  for (i = 0; i < iterations * 1000000; i++) {
-    ;
+void heavy_loop(char id)
+{
+  int i, j;
+  volatile int x = 0;
+  for (i = 0; i < 50; i++)
+  {
+    for (j = 0; j < 1000000; j++)
+    {
+      x += 1;
+    }
+
+    printf(1, "%c ", id);
   }
 }
 
-int main(int argc, char *argv[]) {
-  int pid;
-  int i;
+int main(int argc, char *argv[])
+{
+  int pid = fork();
 
-  pid = fork();
-
-  if (pid < 0) {
+  if (pid < 0)
+  {
     printf(1, "fork failed\n");
     exit();
   }
 
-  for (i = 0; i < 10; i++) {
-    spin(100); 
-    printf(1, "pid %d: running...\n", getpid());
+  if (pid == 0)
+  {
+    heavy_loop('B');
+    exit();
   }
-
-  if (pid > 0) {
+  else
+  {
+    heavy_loop('A');
     wait();
   }
 
+  printf(1, "\nRR Test Finished\n");
   exit();
 }
