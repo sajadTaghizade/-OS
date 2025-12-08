@@ -187,6 +187,10 @@ int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 int             show_process_family(int);
 void            balance_load(void);
+int             start_throughput_measuring(void);
+int             end_throughput_measuring(void);
+void            print_process_info(void);
+
 
 // void            autocomplete_init(void);
 

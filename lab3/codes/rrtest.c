@@ -6,7 +6,7 @@ void heavy_loop(char id)
 {
   int i, j;
   volatile int x = 0;
-  for (i = 0; i < 50; i++)
+  for (i = 0; i < 500; i++)
   {
     for (j = 0; j < 1000000; j++)
     {

@@ -120,8 +120,8 @@ void trap(struct trapframe *tf)
     {
       if (myproc()->ticks_consumed >= QUANTUM)
       {
-        cprintf("CPU %d (Even): PID %d yielded after %d ticks (Quantum %d)\n",
-                cpuid(), myproc()->pid, myproc()->ticks_consumed, QUANTUM);
+        cprintf("\nCPU %d (Even): PID %d yielded after %d ticks (Quantum %d)\n",
+                myproc()->cpu_id, myproc()->pid, myproc()->ticks_consumed, QUANTUM);
         yield();
       }
     }

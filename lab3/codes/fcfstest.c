@@ -15,7 +15,7 @@ void heavy_task(int id) {
 
 int main() {
     int i;
-    for (i = 10; i < 14; i++) {
+    for (i = 10; i < 18; i++) {
         int pid = fork();
         if (pid == 0) {
             heavy_task(getpid());

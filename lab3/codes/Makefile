@@ -192,6 +192,7 @@ UPROGS=\
 	_queuetest\
 	_fcfstest\
 	_balancetest\
+	_test_scheduler\
 
 	
 

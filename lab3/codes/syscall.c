@@ -108,6 +108,10 @@ extern int sys_show_process_family(void);
 extern int sys_simplearith(void);
 extern int sys_grep_syscall(void);
 extern int sys_set_priority_syscall(void);
+extern int sys_start_throughput_measuring(void);
+extern int sys_end_throughput_measuring(void);
+extern int sys_print_process_info(void);
+
 
 
 static int (*syscalls[])(void) = {
@@ -137,6 +141,9 @@ static int (*syscalls[])(void) = {
 [SYS_set_priority_syscall] sys_set_priority_syscall,
 [SYS_simplearith] sys_simplearith,
 [SYS_grep_syscall]   sys_grep_syscall,
+[SYS_start_throughput_measuring] sys_start_throughput_measuring,
+[SYS_end_throughput_measuring] sys_end_throughput_measuring,
+[SYS_print_process_info] sys_print_process_info,
 };
 
 void

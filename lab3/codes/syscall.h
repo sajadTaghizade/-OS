@@ -25,4 +25,6 @@
 #define SYS_show_process_family 24
 #define SYS_set_priority_syscall 25
 #define SYS_grep_syscall 26
-
+#define SYS_start_throughput_measuring 27
+#define SYS_end_throughput_measuring 28
+#define SYS_print_process_info 29

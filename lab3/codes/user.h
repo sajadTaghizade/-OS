@@ -29,6 +29,9 @@ int show_process_family(int);
 int simple_arithmetic_syscall(int a, int b);
 int grep_syscall(const char* keyword, const char* filename, char* user_buffer, int buffer_size);
 int set_priority_syscall(int pid, int priority);
+int start_throughput_measuring(void);
+int end_throughput_measuring(void);
+int print_process_info(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

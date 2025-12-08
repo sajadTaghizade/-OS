@@ -52,11 +52,16 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 
-
   int priority;
   int ticks_consumed;          // Ticks consumed in current quantum
   uint ctime;                  // Creation time
   struct proc *next;           // Next process in run queue
+
+  int etime;
+  int throughput_state;
+  int start_ticks;
+  int finished_count;
+  int cpu_id;
 };
 
 // Process memory is laid out contiguously, low addresses first:

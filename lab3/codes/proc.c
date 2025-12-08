@@ -141,6 +141,8 @@ void balance_load(void)
       }
       victim->next = 0;
 
+      victim->cpu_id = target_cpu - cpus;
+
       push_back(target_cpu, victim);
 
       cprintf("LoadBalance: Moved PID %d from CPU %d (load %d) to CPU %d (load %d)\n",
@@ -224,6 +226,7 @@ found:
   p->priority = 1;
   p->ticks_consumed = 0;
   p->ctime = ticks;
+  p->finished_count = 0;
 
   release(&ptable.lock);
 
@@ -302,7 +305,7 @@ void userinit(void)
       }
     }
   }
-
+  p->cpu_id = best_cpu - cpus;
   cprintf("userinit: PID %d assigned to E-core %d (Load: %d)\n", p->pid, best_cpu - cpus, min_load);
   push_back(best_cpu, p);
 
@@ -391,7 +394,7 @@ int fork(void)
       }
     }
   }
-
+  np->cpu_id = best_cpu - cpus;
   cprintf("fork: PID %d assigned to E-core %d (Load: %d)\n", np->pid, best_cpu-cpus, min_load);
   push_back(best_cpu, np);
 
@@ -478,6 +481,9 @@ int wait(void)
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+        if(curproc->throughput_state == 1) {
+            curproc->finished_count++;
+        }
         p->state = UNUSED;
         release(&ptable.lock);
         return pid;
@@ -882,4 +888,96 @@ int sys_set_priority_syscall(void)
 
   cprintf("set_priority: PID %d not found\n", pid);
   return -1;
+}
+
+
+int
+start_throughput_measuring(void)
+{
+  struct proc *p = myproc();
+  p->start_ticks = ticks;
+  p->throughput_state = 1;
+  p->finished_count = 0;
+  cprintf("Throughput measurement started at tick %d (PID %d)\n", p->start_ticks, p->pid);
+  return 0;
+}
+
+int
+end_throughput_measuring(void)
+{
+struct proc *p = myproc();
+
+  if (p->throughput_state == 0) {
+    cprintf("Error: Throughput measurement not started.\n");
+    return -1;
+  }
+  
+  p->throughput_state = 0;
+  int end_ticks = ticks;
+  int elapsed_ticks = end_ticks - p->start_ticks;
+  
+  if (elapsed_ticks <= 0) {
+    cprintf("Error: Elapsed time is zero or negative.\n");
+    return -1;
+  }
+  
+  int completed_procs = p->finished_count;
+
+int throughput_scaled = (completed_procs * 1000) / elapsed_ticks;
+  int whole_part = throughput_scaled / 1000;
+  int decimal_part = throughput_scaled % 1000;
+
+  cprintf("\n--- Throughput Measurement Results (PID %d) ---\n", p->pid);
+  cprintf("Total completed processes: %d\n", completed_procs);
+  cprintf("Elapsed time (ticks): %d\n", elapsed_ticks);
+  
+  cprintf("Throughput: %d.", whole_part);
+
+  if (decimal_part < 10) {
+    cprintf("00");
+  } else if (decimal_part < 100) {
+    cprintf("0");
+  }
+  
+  cprintf("%d Processes/Tick\n", decimal_part);
+  // -----------------------------
+  
+  cprintf("--------------------------------------\n\n");
+  
+  return 0;
+}
+
+void
+print_process_info(void)
+{
+  struct proc *p = myproc();
+
+  static char *states[] = {
+  [UNUSED]    "unused",
+  [EMBRYO]    "embryo",
+  [SLEEPING]  "sleep ",
+  [RUNNABLE]  "runble",
+  [RUNNING]   "runing",
+  [ZOMBIE]    "zombie"
+  };
+
+  cprintf("\nPID \t State \t \t Algo \t Life \t CPU\n");
+  cprintf("----------------------------------------------------\n");
+
+  if (p != 0 && p->state != UNUSED) {
+      
+      int lifetime = ticks - p->ctime;
+
+      char *algo = (p->cpu_id % 2 == 0) ? "RR" : "FCFS";
+
+      cprintf("%d \t %s \t %s \t %d \t %d\n", 
+        p->pid, 
+        states[p->state],
+        algo, 
+        lifetime,
+        p->cpu_id
+      );
+  }
+
+  cprintf("----------------------------------------------------\n\n");
 }

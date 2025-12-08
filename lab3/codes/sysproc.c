@@ -117,3 +117,22 @@ sys_show_process_family(void)
 
   return show_process_family(pid);
 }
+
+int
+sys_start_throughput_measuring(void)
+{
+  return start_throughput_measuring();
+}
+
+int
+sys_end_throughput_measuring(void)
+{
+  return end_throughput_measuring();
+}
+
+int
+sys_print_process_info(void)
+{
+  print_process_info();
+  return 0;
+}
