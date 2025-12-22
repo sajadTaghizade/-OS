@@ -580,12 +580,15 @@ void consoleintr(int (*getc)(void))
 
       if (start_point == -1)
       {
+        // This is the FIRST press of Ctrl+S, mark the start point
         start_point = current_pos;
       }
       else
       {
+        // This is the SECOND press, mark the end and highlight
         end_point = current_pos - 1;
 
+        // Ensure start_point is always less than end_point
         if (start_point > end_point)
         {
           int temp = start_point;
@@ -595,6 +598,7 @@ void consoleintr(int (*getc)(void))
           end_point--;
         }
 
+        // Call the function to highlight the region
         consolehighlight(start_point, end_point, 1);
       }
       break;
@@ -605,10 +609,14 @@ void consoleintr(int (*getc)(void))
       if (start_point != -1 && end_point != -1)
       {
         int i, j;
+        // Loop from the start to the end of the selection
         for (i = start_point, j = 0; i <= end_point && j < INPUT_BUF - 1; i++, j++)
         {
+          // Read the character byte (low byte) from video memory
+          // and store it in our copy buffer.
           copy_buffer[j] = crt[i] & 0xFF;
         }
+        // Add a null terminator to make it a valid C string.
         copy_buffer[j] = '\0';
       }
       break;
@@ -618,7 +626,7 @@ void consoleintr(int (*getc)(void))
       number_of_tab = 0;
 
       if (copy_buffer[0] != '\0')
-      { 
+      { // Check if there's anything to paste
         if (end_point != -1)
         {
           delete_selected_text();
@@ -628,6 +636,7 @@ void consoleintr(int (*getc)(void))
         {
           char char_to_paste = copy_buffer[i];
 
+          // 1. Add the character to the input data buffer
           write_character(char_to_paste);
 
           i++;
@@ -750,7 +759,6 @@ int consoleread(struct inode *ip, char *dst, int n)
     }
     if (tab_flag)
     {
-
       c = input.buf[(input.r2) % INPUT_BUF];
       if (input.r2 == input.w2)
       {
