@@ -28,3 +28,4 @@
 #define SYS_start_throughput_measuring 27
 #define SYS_end_throughput_measuring 28
 #define SYS_print_process_info 29
+#define SYS_getlockstat 30

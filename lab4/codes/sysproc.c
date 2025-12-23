@@ -6,7 +6,10 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "spinlock.h"
 
+extern struct spinlock tickslock;
+extern struct cpu cpus[NCPU];
 
 int
 sys_fork(void)
@@ -134,5 +137,30 @@ int
 sys_print_process_info(void)
 {
   print_process_info();
+  return 0;
+}
+
+int
+sys_getlockstat(void)
+{
+  uint64 *score;
+  uint64 kscore[NCPU];
+  int i;
+
+  if(argptr(0, (char**)&score, sizeof(uint64)*NCPU) < 0)
+    return -1;
+
+  for(i = 0; i < NCPU; i++){
+    if(tickslock.acq_count[i] > 0){
+      kscore[i] = (uint)tickslock.total_spins[i] / (uint)tickslock.acq_count[i];
+    } else {
+      kscore[i] = 0;
+    }
+  }
+  
+  for(i=0; i<NCPU; i++){
+      score[i] = kscore[i];
+  }
+
   return 0;
 }

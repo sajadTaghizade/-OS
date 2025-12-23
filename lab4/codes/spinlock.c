@@ -9,12 +9,19 @@
 #include "proc.h"
 #include "spinlock.h"
 
+extern struct cpu cpus[NCPU];
+
 void
 initlock(struct spinlock *lk, char *name)
 {
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
+  int i;
+  for(i = 0; i < NCPU; i++){
+    lk->acq_count[i] = 0;
+    lk->total_spins[i] = 0;
+  }
 }
 
 // Acquire the lock.
@@ -28,13 +35,21 @@ acquire(struct spinlock *lk)
   if(holding(lk))
     panic("acquire");
 
+  // --- MODIFIED FOR LAB 4 ---
+  uint64 spins = 0; // Local counter for spins
+
   // The xchg is atomic.
   while(xchg(&lk->locked, 1) != 0)
-    ;
+    spins++; // Increment local spin counter
+
+  // Record stats after acquiring
+  int cpu_id = mycpu() - cpus; // Get current CPU index (0 to NCPU-1)
+  lk->acq_count[cpu_id]++;
+  lk->total_spins[cpu_id] += spins;
+  // --------------------------
 
   // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
+  // past this point...
   __sync_synchronize();
 
   // Record info about lock acquisition for debugging.
