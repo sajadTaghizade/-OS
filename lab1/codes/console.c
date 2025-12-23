@@ -242,7 +242,7 @@ write_cursor_pos(uint pos)
   outb(CRTPORT + 1, pos);
 }
 
-static void
+static void 
 move_cursor(int steps)
 {
   if (steps == 0)
@@ -255,8 +255,7 @@ move_cursor(int steps)
 
 // extra functions MH
 
-static void
-consolehighlight(int start_pos, int end_pos, int on)
+static void consolehighlight(int start_pos, int end_pos, int on)
 {
   int max_pos = 25 * 80;
   ushort attr;
@@ -268,11 +267,11 @@ consolehighlight(int start_pos, int end_pos, int on)
 
   if (on)
   {
-    attr = 0x7000; // Highlight ON: Black text on light-grey background
+    attr = 0x7000;
   }
   else
   {
-    attr = 0x0700; // Highlight OFF: Default light-grey text on black background
+    attr = 0x0700;
   }
 
   for (int i = start_pos; i <= end_pos; i++)
@@ -612,11 +611,10 @@ void consoleintr(int (*getc)(void))
         // Loop from the start to the end of the selection
         for (i = start_point, j = 0; i <= end_point && j < INPUT_BUF - 1; i++, j++)
         {
-          // Read the character byte (low byte) from video memory
+          // Read the character byt from video memory
           // and store it in our copy buffer.
           copy_buffer[j] = crt[i] & 0xFF;
         }
-        // Add a null terminator to make it a valid C string.
         copy_buffer[j] = '\0';
       }
       break;
@@ -626,7 +624,7 @@ void consoleintr(int (*getc)(void))
       number_of_tab = 0;
 
       if (copy_buffer[0] != '\0')
-      { // Check if there's anything to paste
+      { // Check if theres anything to paste
         if (end_point != -1)
         {
           delete_selected_text();
@@ -636,7 +634,6 @@ void consoleintr(int (*getc)(void))
         {
           char char_to_paste = copy_buffer[i];
 
-          // 1. Add the character to the input data buffer
           write_character(char_to_paste);
 
           i++;
