@@ -196,3 +196,10 @@ void            print_process_info(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+
+
+struct plock;
+void            plock_init(struct plock*, char*);
+void            plock_acquire(struct plock*, int);
+void            plock_release(struct plock*);

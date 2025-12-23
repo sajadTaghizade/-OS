@@ -9,3 +9,15 @@ struct spinlock {
                      // that locked the lock.
 };
 
+struct plock_node {
+  struct proc *proc;       
+  int priority;            
+  struct plock_node *next; 
+};
+
+struct plock {
+  struct spinlock lk;      
+  int locked;              
+  struct plock_node *head; 
+  char *name;              
+};
