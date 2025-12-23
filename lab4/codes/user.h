@@ -32,6 +32,8 @@ int set_priority_syscall(int pid, int priority);
 int start_throughput_measuring(void);
 int end_throughput_measuring(void);
 int print_process_info(void);
+int plock_acquire(int priority);
+int plock_release(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

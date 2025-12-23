@@ -111,6 +111,8 @@ extern int sys_set_priority_syscall(void);
 extern int sys_start_throughput_measuring(void);
 extern int sys_end_throughput_measuring(void);
 extern int sys_print_process_info(void);
+extern int sys_plock_acquire(void);
+extern int sys_plock_release(void);
 
 
 
@@ -144,6 +146,8 @@ static int (*syscalls[])(void) = {
 [SYS_start_throughput_measuring] sys_start_throughput_measuring,
 [SYS_end_throughput_measuring] sys_end_throughput_measuring,
 [SYS_print_process_info] sys_print_process_info,
+[SYS_plock_acquire] sys_plock_acquire,
+[SYS_plock_release] sys_plock_release,
 };
 
 void

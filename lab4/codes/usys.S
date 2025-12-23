@@ -35,6 +35,8 @@ SYSCALL(grep_syscall)
 SYSCALL(start_throughput_measuring)
 SYSCALL(end_throughput_measuring)
 SYSCALL(print_process_info)
+SYSCALL(plock_acquire)
+SYSCALL(plock_release)
 
 
 

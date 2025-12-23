@@ -28,3 +28,5 @@
 #define SYS_start_throughput_measuring 27
 #define SYS_end_throughput_measuring 28
 #define SYS_print_process_info 29
+#define SYS_plock_acquire 30
+#define SYS_plock_release 31
