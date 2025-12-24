@@ -113,6 +113,8 @@ extern int sys_end_throughput_measuring(void);
 extern int sys_print_process_info(void);
 extern int sys_plock_acquire(void);
 extern int sys_plock_release(void);
+extern int sys_plock_test(void);
+
 
 
 
@@ -148,6 +150,7 @@ static int (*syscalls[])(void) = {
 [SYS_print_process_info] sys_print_process_info,
 [SYS_plock_acquire] sys_plock_acquire,
 [SYS_plock_release] sys_plock_release,
+[SYS_plock_test] sys_plock_test,
 };
 
 void

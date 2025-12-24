@@ -30,3 +30,4 @@
 #define SYS_print_process_info 29
 #define SYS_plock_acquire 30
 #define SYS_plock_release 31
+#define SYS_plock_test  32  

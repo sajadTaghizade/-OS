@@ -195,6 +195,8 @@ UPROGS=\
 	_balancetest\
 	_test_scheduler\
 	_plocktest\
+	_plock_test\
+
 
 	
 
