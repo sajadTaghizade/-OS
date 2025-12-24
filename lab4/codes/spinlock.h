@@ -17,7 +17,8 @@ struct plock_node {
 
 struct plock {
   struct spinlock lk;      
-  int locked;              
+  int locked;  
+  struct proc *owner;            
   struct plock_node *head; 
   char *name;              
 };
