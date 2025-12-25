@@ -203,3 +203,13 @@ struct plock;
 void            plock_init(struct plock*, char*);
 void            plock_acquire(struct plock*, int);
 void            plock_release(struct plock*);
+
+
+// rwlock 
+
+// rwlock
+void rwlock_init(struct rwlock*, char*);
+void rwlock_acquire_read(struct rwlock*);
+void rwlock_release_read(struct rwlock*);
+void rwlock_acquire_write(struct rwlock*);
+void rwlock_release_write(struct rwlock*);
