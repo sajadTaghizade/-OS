@@ -38,6 +38,8 @@ SYSCALL(print_process_info)
 SYSCALL(plock_acquire)
 SYSCALL(plock_release)
 SYSCALL(plock_test)
+SYSCALL(rwlock_test)
+
 
 
 

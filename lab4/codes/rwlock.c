@@ -4,6 +4,8 @@
 #include "rwlock.h"
 
 
+struct rwlock global_rwlock;
+
 void rwlock_init(struct rwlock *rw, char *name)
 {
   initlock(&rw->lk, "rwlock");

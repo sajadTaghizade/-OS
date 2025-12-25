@@ -6,7 +6,10 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "rwlock.h"
+
 extern struct plock global_plock;
+extern struct rwlock global_rwlock;
 
 int sys_fork(void)
 {
