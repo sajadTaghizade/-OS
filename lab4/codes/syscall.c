@@ -111,6 +111,11 @@ extern int sys_set_priority_syscall(void);
 extern int sys_start_throughput_measuring(void);
 extern int sys_end_throughput_measuring(void);
 extern int sys_print_process_info(void);
+extern int sys_plock_acquire(void);
+extern int sys_plock_release(void);
+extern int sys_plock_test(void);
+extern int sys_rwlock_test(void);
+extern int sys_sleeplock_test(void);
 extern int sys_getlockstat(void);
 
 
@@ -144,6 +149,11 @@ static int (*syscalls[])(void) = {
 [SYS_start_throughput_measuring] sys_start_throughput_measuring,
 [SYS_end_throughput_measuring] sys_end_throughput_measuring,
 [SYS_print_process_info] sys_print_process_info,
+[SYS_plock_acquire] sys_plock_acquire,
+[SYS_plock_release] sys_plock_release,
+[SYS_plock_test] sys_plock_test,
+[SYS_rwlock_test] sys_rwlock_test,
+[SYS_sleeplock_test] sys_sleeplock_test,
 [SYS_getlockstat] sys_getlockstat,
 };
 

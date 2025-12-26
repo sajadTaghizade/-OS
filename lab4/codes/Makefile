@@ -27,6 +27,9 @@ OBJS = \
 	uart.o\
 	vectors.o\
 	vm.o\
+	plock.o\
+	rwlock.o \
+	sleeplock_test.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -193,6 +196,9 @@ UPROGS=\
 	_fcfstest\
 	_balancetest\
 	_test_scheduler\
+	_plocktest\
+	_plock_test\
+	_sleeplocktest\
 	_locktest\
 
 	

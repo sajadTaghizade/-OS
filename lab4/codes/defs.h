@@ -139,6 +139,10 @@ void            releasesleep(struct sleeplock*);
 int             holdingsleep(struct sleeplock*);
 void            initsleeplock(struct sleeplock*, char*);
 
+// sleep lock test
+void sleeplock_test_run(void);
+int sys_sleeplock_test(void);
+
 // string.c
 int             memcmp(const void*, const void*, uint);
 void*           memmove(void*, const void*, uint);
@@ -196,3 +200,23 @@ void            print_process_info(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+
+
+struct plock;
+void            plock_init(struct plock*, char*);
+void            plock_acquire(struct plock*, int);
+void            plock_release(struct plock*);
+
+
+// rwlock 
+
+// rwlock
+void rwlock_init(struct rwlock*, char*);
+void rwlock_acquire_read(struct rwlock*);
+void rwlock_release_read(struct rwlock*);
+void rwlock_acquire_write(struct rwlock*);
+void rwlock_release_write(struct rwlock*);
+
+// rwlock test
+int sys_rwlock_test(void);

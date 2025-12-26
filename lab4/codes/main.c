@@ -11,6 +11,8 @@ static void mpmain(void)  __attribute__((noreturn));
 extern pde_t *kpgdir;
 extern char end[]; // first address after kernel loaded from ELF file
 
+extern struct plock global_plock;
+
 // void autocomplete_init(void);
 
 // Bootstrap processor starts running C code here.
@@ -40,6 +42,7 @@ main(void)
 
   userinit();      // first user process
   mpmain();        // finish this processor's setup
+  plock_init(&global_plock, "global_plock");
 }
 
 // Other CPUs jump here from entryother.S.

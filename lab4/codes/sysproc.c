@@ -7,71 +7,71 @@
 #include "mmu.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "rwlock.h"
+
+extern struct plock global_plock;
+extern struct rwlock global_rwlock;
+extern void sleeplock_test_run(void);
 
 extern struct spinlock tickslock;
 extern struct cpu cpus[NCPU];
 
-int
-sys_fork(void)
+int sys_fork(void)
 {
   return fork();
 }
 
-int
-sys_exit(void)
+int sys_exit(void)
 {
   exit();
-  return 0;  // not reached
+  return 0; // not reached
 }
 
-int
-sys_wait(void)
+int sys_wait(void)
 {
   return wait();
 }
 
-int
-sys_kill(void)
+int sys_kill(void)
 {
   int pid;
 
-  if(argint(0, &pid) < 0)
+  if (argint(0, &pid) < 0)
     return -1;
   return kill(pid);
 }
 
-int
-sys_getpid(void)
+int sys_getpid(void)
 {
   return myproc()->pid;
 }
 
-int
-sys_sbrk(void)
+int sys_sbrk(void)
 {
   int addr;
   int n;
 
-  if(argint(0, &n) < 0)
+  if (argint(0, &n) < 0)
     return -1;
   addr = myproc()->sz;
-  if(growproc(n) < 0)
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
 
-int
-sys_sleep(void)
+int sys_sleep(void)
 {
   int n;
   uint ticks0;
 
-  if(argint(0, &n) < 0)
+  if (argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(myproc()->killed){
+  while (ticks - ticks0 < n)
+  {
+    if (myproc()->killed)
+    {
       release(&tickslock);
       return -1;
     }
@@ -83,8 +83,7 @@ sys_sleep(void)
 
 // return how many clock tick interrupts have occurred
 // since start.
-int
-sys_uptime(void)
+int sys_uptime(void)
 {
   uint xticks;
 
@@ -94,8 +93,7 @@ sys_uptime(void)
   return xticks;
 }
 
-int
-sys_simplearith(void)
+int sys_simplearith(void)
 {
   struct proc *p = myproc();
 
@@ -109,32 +107,29 @@ sys_simplearith(void)
   return result;
 }
 
-int
-sys_show_process_family(void)
+int sys_show_process_family(void)
 {
   int pid;
 
-  if(argint(0, &pid) < 0) {
+  if (argint(0, &pid) < 0)
+  {
     return -1;
   }
 
   return show_process_family(pid);
 }
 
-int
-sys_start_throughput_measuring(void)
+int sys_start_throughput_measuring(void)
 {
   return start_throughput_measuring();
 }
 
-int
-sys_end_throughput_measuring(void)
+int sys_end_throughput_measuring(void)
 {
   return end_throughput_measuring();
 }
 
-int
-sys_print_process_info(void)
+int sys_print_process_info(void)
 {
   print_process_info();
   return 0;
@@ -162,5 +157,29 @@ sys_getlockstat(void)
       score[i] = kscore[i];
   }
 
+  return 0;
+}
+
+int sys_plock_acquire(void)
+{
+  int priority;
+  if (argint(0, &priority) < 0)
+    return -1;
+
+  plock_acquire(&global_plock, priority);
+  return 0;
+}
+
+int sys_plock_release(void)
+{
+  plock_release(&global_plock);
+  return 0;
+}
+
+
+int
+sys_sleeplock_test(void)
+{
+  sleeplock_test_run();
   return 0;
 }

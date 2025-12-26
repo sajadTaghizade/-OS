@@ -11,3 +11,17 @@ struct spinlock {
   uint64 acq_count[NCPU];   // Times lock acquired on each CPU
   uint64 total_spins[NCPU]; // Total spin cycles on each CPU
 };
+
+struct plock_node {
+  struct proc *proc;       
+  int priority;            
+  struct plock_node *next; 
+};
+
+struct plock {
+  struct spinlock lk;      
+  int locked;  
+  struct proc *owner;            
+  struct plock_node *head; 
+  char *name;              
+};

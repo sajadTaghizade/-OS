@@ -33,6 +33,12 @@ int start_throughput_measuring(void);
 int end_throughput_measuring(void);
 int print_process_info(void);
 int getlockstat(uint64 *score);
+int plock_acquire(int priority);
+int plock_release(void);
+int rwlock_test(void);
+int sleeplock_test(void);
+
+
 
 // ulib.c
 int stat(const char*, struct stat*);
