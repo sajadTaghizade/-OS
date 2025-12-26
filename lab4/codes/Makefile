@@ -29,6 +29,7 @@ OBJS = \
 	vm.o\
 	plock.o\
 	rwlock.o \
+	sleeplock_test.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -197,6 +198,7 @@ UPROGS=\
 	_test_scheduler\
 	_plocktest\
 	_plock_test\
+	_sleeplocktest\
 
 
 	

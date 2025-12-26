@@ -10,6 +10,8 @@
 
 extern struct plock global_plock;
 extern struct rwlock global_rwlock;
+extern void sleeplock_test_run(void);
+
 
 int sys_fork(void)
 {
@@ -143,5 +145,13 @@ int sys_plock_acquire(void)
 int sys_plock_release(void)
 {
   plock_release(&global_plock);
+  return 0;
+}
+
+
+int
+sys_sleeplock_test(void)
+{
+  sleeplock_test_run();
   return 0;
 }

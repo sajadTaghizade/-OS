@@ -115,6 +115,8 @@ extern int sys_plock_acquire(void);
 extern int sys_plock_release(void);
 extern int sys_plock_test(void);
 extern int sys_rwlock_test(void);
+extern int sys_sleeplock_test(void);
+
 
 
 
@@ -153,6 +155,7 @@ static int (*syscalls[])(void) = {
 [SYS_plock_release] sys_plock_release,
 [SYS_plock_test] sys_plock_test,
 [SYS_rwlock_test] sys_rwlock_test,
+[SYS_sleeplock_test] sys_sleeplock_test,
 
 };
 

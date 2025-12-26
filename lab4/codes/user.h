@@ -35,6 +35,8 @@ int print_process_info(void);
 int plock_acquire(int priority);
 int plock_release(void);
 int rwlock_test(void);
+int sleeplock_test(void);
+
 
 
 // ulib.c
