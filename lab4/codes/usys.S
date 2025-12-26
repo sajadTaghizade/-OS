@@ -35,12 +35,12 @@ SYSCALL(grep_syscall)
 SYSCALL(start_throughput_measuring)
 SYSCALL(end_throughput_measuring)
 SYSCALL(print_process_info)
-SYSCALL(getlockstat)
 SYSCALL(plock_acquire)
 SYSCALL(plock_release)
 SYSCALL(plock_test)
 SYSCALL(rwlock_test)
 SYSCALL(sleeplock_test)
+SYSCALL(getlockstat)
 
 
 
