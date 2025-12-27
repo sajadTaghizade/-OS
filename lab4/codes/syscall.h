@@ -30,7 +30,11 @@
 #define SYS_print_process_info 29
 #define SYS_plock_acquire 30
 #define SYS_plock_release 31
-#define SYS_plock_test  32  
-#define SYS_rwlock_test  33
-#define SYS_sleeplock_test  34
+#define SYS_rwlock_test  32
+#define SYS_test_acquire 33
+#define SYS_test_release 34
 #define SYS_getlockstat 35
+#define SYS_rwlock_read_acquire   36
+#define SYS_rwlock_read_release   37
+#define SYS_rwlock_write_acquire  38
+#define SYS_rwlock_write_release  39

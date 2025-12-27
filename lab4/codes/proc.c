@@ -145,8 +145,8 @@ void balance_load(void)
 
       push_back(target_cpu, victim);
 
-      cprintf("LoadBalance: Moved PID %d from CPU %d (load %d) to CPU %d (load %d)\n",
-              victim->pid, cpuid(), my_load, target_cpu - cpus, min_load);
+      // cprintf("LoadBalance: Moved PID %d from CPU %d (load %d) to CPU %d (load %d)\n",
+              // victim->pid, cpuid(), my_load, target_cpu - cpus, min_load);
     }
   }
 
@@ -306,7 +306,7 @@ void userinit(void)
     }
   }
   p->cpu_id = best_cpu - cpus;
-  cprintf("userinit: PID %d assigned to E-core %d (Load: %d)\n", p->pid, best_cpu - cpus, min_load);
+  // cprintf("userinit: PID %d assigned to E-core %d (Load: %d)\n", p->pid, best_cpu - cpus, min_load);
   push_back(best_cpu, p);
 
   release(&ptable.lock);
@@ -395,7 +395,7 @@ int fork(void)
     }
   }
   np->cpu_id = best_cpu - cpus;
-  cprintf("fork: PID %d assigned to E-core %d (Load: %d)\n", np->pid, best_cpu-cpus, min_load);
+  // cprintf("fork: PID %d assigned to E-core %d (Load: %d)\n", np->pid, best_cpu-cpus, min_load);
   push_back(best_cpu, np);
 
   release(&ptable.lock);

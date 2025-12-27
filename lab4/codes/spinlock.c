@@ -35,7 +35,6 @@ acquire(struct spinlock *lk)
   if(holding(lk))
     panic("acquire");
 
-  // --- MODIFIED FOR LAB 4 ---
   uint64 spins = 0; // Local counter for spins
 
   // The xchg is atomic.

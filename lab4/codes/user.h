@@ -35,7 +35,6 @@ int print_process_info(void);
 int getlockstat(uint64 *score);
 int plock_acquire(int priority);
 int plock_release(void);
-int rwlock_test(void);
 int sleeplock_test(void);
 
 
@@ -54,3 +53,12 @@ void* malloc(uint);
 void free(void*);
 int atoi(const char*);
 
+
+
+int test_acquire(void);
+int test_release(void);
+
+int rwlock_read_acquire(void);
+int rwlock_read_release(void);
+int rwlock_write_acquire(void);
+int rwlock_write_release(void);

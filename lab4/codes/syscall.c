@@ -114,9 +114,14 @@ extern int sys_print_process_info(void);
 extern int sys_plock_acquire(void);
 extern int sys_plock_release(void);
 extern int sys_plock_test(void);
-extern int sys_rwlock_test(void);
-extern int sys_sleeplock_test(void);
 extern int sys_getlockstat(void);
+extern int sys_test_acquire(void);
+extern int sys_test_release(void);
+extern int sys_getlockstat(void);
+extern int sys_rwlock_read_acquire(void);
+extern int sys_rwlock_read_release(void);
+extern int sys_rwlock_write_acquire(void);
+extern int sys_rwlock_write_release(void);
 
 
 static int (*syscalls[])(void) = {
@@ -151,10 +156,15 @@ static int (*syscalls[])(void) = {
 [SYS_print_process_info] sys_print_process_info,
 [SYS_plock_acquire] sys_plock_acquire,
 [SYS_plock_release] sys_plock_release,
-[SYS_plock_test] sys_plock_test,
-[SYS_rwlock_test] sys_rwlock_test,
-[SYS_sleeplock_test] sys_sleeplock_test,
+[SYS_test_acquire] sys_test_acquire,
+[SYS_test_release] sys_test_release,
 [SYS_getlockstat] sys_getlockstat,
+[SYS_rwlock_read_acquire] sys_rwlock_read_acquire,
+[SYS_rwlock_read_release] sys_rwlock_read_release,
+[SYS_rwlock_write_acquire] sys_rwlock_write_acquire,
+[SYS_rwlock_write_release] sys_rwlock_write_release,
+
+
 };
 
 void

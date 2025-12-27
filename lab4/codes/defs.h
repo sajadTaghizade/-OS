@@ -196,7 +196,6 @@ int             end_throughput_measuring(void);
 void            print_process_info(void);
 
 
-// void            autocomplete_init(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
@@ -209,14 +208,12 @@ void            plock_acquire(struct plock*, int);
 void            plock_release(struct plock*);
 
 
-// rwlock 
+ 
+struct rwlock;
 
-// rwlock
 void rwlock_init(struct rwlock*, char*);
 void rwlock_acquire_read(struct rwlock*);
 void rwlock_release_read(struct rwlock*);
 void rwlock_acquire_write(struct rwlock*);
 void rwlock_release_write(struct rwlock*);
-
-// rwlock test
 int sys_rwlock_test(void);

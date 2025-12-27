@@ -14,7 +14,7 @@ void plock_init(struct plock *pl, char *name)
     initlock(&pl->lk, "plock_internal");
     pl->name = name;
     pl->locked = 0;
-    pl->owner = 0; 
+    // pl->owner = 0; 
     pl->head = 0;
 }
 
@@ -25,7 +25,7 @@ void plock_acquire(struct plock *pl, int priority)
     if (pl->locked == 0)
     {
         pl->locked = 1;
-        pl->owner = myproc();
+        // pl->owner = myproc();
         release(&pl->lk);
     }
     else
@@ -37,7 +37,7 @@ void plock_acquire(struct plock *pl, int priority)
         pl->head = node;
         sleep(node, &pl->lk);
 
-        pl->owner = myproc();
+        // pl->owner = myproc();
 
         kfree((char *)node);
         release(&pl->lk);
@@ -82,17 +82,17 @@ void plock_release(struct plock *pl)
 {
     acquire(&pl->lk);
 
-    if (pl->owner != myproc()) {
-        panic("plock_release: not owner");
-    }   
+    // if (pl->owner != myproc()) {
+        // panic("plock_release: not owner");
+    // }   
 
     struct plock_node *winner = plock_pop_max(pl);
 
     if (winner != 0)
     {
         wakeup(winner);
-        pl->owner = winner->proc;
-        pl->owner = 0;
+        // pl->owner = winner->proc;
+        // pl->owner = 0;
     }
     else
     {

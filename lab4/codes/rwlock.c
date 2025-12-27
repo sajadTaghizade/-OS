@@ -20,12 +20,10 @@ void rwlock_acquire_read(struct rwlock *rw)
 {
   acquire(&rw->lk);
 
-  // اگر نویسنده داخل است، منتظر بمان
   while (rw->writer) {
     sleep(rw, &rw->lk);
   }
 
-  // وارد شدن خواننده
   rw->read_count++;
 
   release(&rw->lk);
@@ -38,7 +36,6 @@ void rwlock_release_read(struct rwlock *rw)
 
   rw->read_count--;
 
-  // اگر آخرین خواننده بود، نویسنده‌ها را بیدار کن
   if (rw->read_count == 0) {
     wakeup(rw);
   }
@@ -55,7 +52,6 @@ void rwlock_acquire_write(struct rwlock *rw)
     sleep(rw, &rw->lk);
   }
 
-  // نویسنده وارد می‌شود
   rw->writer = 1;
 
   release(&rw->lk);
@@ -68,7 +64,6 @@ void rwlock_release_write(struct rwlock *rw)
 
   rw->writer = 0;
 
-  // بیدار کردن همه (خوانندگان یا نویسندگان)
   wakeup(rw);
 
   release(&rw->lk);

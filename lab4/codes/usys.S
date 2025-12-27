@@ -37,10 +37,16 @@ SYSCALL(end_throughput_measuring)
 SYSCALL(print_process_info)
 SYSCALL(plock_acquire)
 SYSCALL(plock_release)
-SYSCALL(plock_test)
-SYSCALL(rwlock_test)
-SYSCALL(sleeplock_test)
+SYSCALL(test_acquire)
+SYSCALL(test_release)
+
+
 SYSCALL(getlockstat)
+
+SYSCALL(rwlock_read_acquire)
+SYSCALL(rwlock_read_release)
+SYSCALL(rwlock_write_acquire)
+SYSCALL(rwlock_write_release)
 
 
 
