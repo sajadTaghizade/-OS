@@ -2,8 +2,8 @@
 #include "user.h"
 #include "stat.h"
 
-#define NCHILD 4
-#define NCPU 8
+#define NCHILD 14
+#define NCPU 8 // run with make qemu CPUS=8
 
 void
 work()
