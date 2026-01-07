@@ -38,3 +38,6 @@
 #define SYS_rwlock_read_release   37
 #define SYS_rwlock_write_acquire  38
 #define SYS_rwlock_write_release  39
+#define SYS_write_page  40
+#define SYS_read_page   41
+#define SYS_print_stats 42

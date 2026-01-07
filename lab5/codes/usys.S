@@ -48,7 +48,9 @@ SYSCALL(rwlock_read_release)
 SYSCALL(rwlock_write_acquire)
 SYSCALL(rwlock_write_release)
 
-
+SYSCALL(write_page)
+SYSCALL(read_page)
+SYSCALL(print_stats)
 
 
 

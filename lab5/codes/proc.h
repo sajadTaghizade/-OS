@@ -69,3 +69,20 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+struct central_page_entry {
+  char *phys_addr;      
+  uint vpn;            
+  int pid;              
+  int valid;            
+  
+// از اینا برای الگوریتم های بخش ۲  
+  uint last_access;     // برای LRU
+  uint access_count;    // برای LFU
+  int clock_bit;        // برای Clock
+};
+
+struct {
+  struct spinlock lock;
+  struct central_page_entry entries[4];
+} central_ptable;

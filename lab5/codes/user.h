@@ -62,3 +62,8 @@ int rwlock_read_acquire(void);
 int rwlock_read_release(void);
 int rwlock_write_acquire(void);
 int rwlock_write_release(void);
+
+
+int write_page(void*, int);
+int read_page(void*);
+int print_stats(void);

@@ -18,9 +18,6 @@ struct sleeplock testlock;
 extern struct spinlock tickslock;
 extern struct cpu cpus[NCPU];
 
-
-
-
 int sys_fork(void)
 {
   return fork();
@@ -185,8 +182,6 @@ int sys_plock_release(void)
   return 0;
 }
 
-
-
 void ensure_testlock_init(void)
 {
   if (testlock.name == 0)
@@ -208,35 +203,55 @@ int sys_test_release(void)
   return 0;
 }
 
-
-
-
-
-void ensure_rwlock_init(void) {
-  if(global_rwlock.name == 0) 
+void ensure_rwlock_init(void)
+{
+  if (global_rwlock.name == 0)
     rwlock_init(&global_rwlock, "test_rwlock");
 }
 
-int sys_rwlock_read_acquire(void) {
+int sys_rwlock_read_acquire(void)
+{
   ensure_rwlock_init();
   rwlock_acquire_read(&global_rwlock);
   return 0;
 }
 
-int sys_rwlock_read_release(void) {
+int sys_rwlock_read_release(void)
+{
   ensure_rwlock_init();
   rwlock_release_read(&global_rwlock);
   return 0;
 }
 
-int sys_rwlock_write_acquire(void) {
+int sys_rwlock_write_acquire(void)
+{
   ensure_rwlock_init();
   rwlock_acquire_write(&global_rwlock);
   return 0;
 }
 
-int sys_rwlock_write_release(void) {
+int sys_rwlock_write_release(void)
+{
   ensure_rwlock_init();
   rwlock_release_write(&global_rwlock);
   return 0;
+}
+
+int sys_write_page(void)
+{
+  char *addr;
+  int value;
+  if (argptr(0, &addr, sizeof(char *)) < 0 || argint(1, &value) < 0)
+    return -1;
+
+  return handle_paging_request(addr, value, 1);
+}
+
+int sys_read_page(void)
+{
+  char *addr;
+  if (argptr(0, &addr, sizeof(char *)) < 0)
+    return -1;
+
+  return handle_paging_request(addr, 0, 0);
 }
